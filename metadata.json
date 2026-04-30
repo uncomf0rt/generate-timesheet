@@ -1,0 +1,6 @@
+{
+  "name": "Auto Timesheet Generator",
+  "description": "Generate timesheets from Azure DevOps commits and Jira issues.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
