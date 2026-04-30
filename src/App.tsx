@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { ResultTable } from './components/ResultTable';
+import { HelpPanel } from './components/HelpPanel';
 import { Config, DayRecord } from './lib/types';
 import { generateTimesheetData } from './lib/generator';
 import { exportToExcel, exportToPDF } from './lib/exportUtils';
-import { DownloadCloud, FileText } from 'lucide-react';
+import { DownloadCloud, FileText, HelpCircle, X } from 'lucide-react';
 import { format, subDays, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -23,6 +24,7 @@ export default function App() {
 
   const [records, setRecords] = useState<DayRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleChange = (key: keyof Config, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));
@@ -65,16 +67,32 @@ export default function App() {
       <div className="max-w-6xl mx-auto space-y-12">
         
         {/* Header */}
-        <div className="text-center pt-8">
-          <h1 className="text-4xl font-serif italic text-[#3E3D39] tracking-tight sm:text-5xl">
-            Auto Timesheet Generator
-          </h1>
-          <p className="mt-4 max-w-2xl mx-auto text-xs uppercase tracking-widest text-[#9A958A] font-semibold">
-            Otomatisasi pembuatan timesheet dari Azure DevOps commits dan Jira Issues
-          </p>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8">
+          <div className="text-center md:text-left">
+            <h1 className="text-4xl font-serif italic text-[#3E3D39] tracking-tight sm:text-5xl">
+              Auto Timesheet Generator
+            </h1>
+            <p className="mt-4 max-w-2xl mx-auto md:mx-0 text-xs uppercase tracking-widest text-[#9A958A] font-semibold">
+              Otomatisasi pembuatan timesheet dari Azure DevOps commits dan Jira Issues
+            </p>
+          </div>
+          
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border ${
+              showHelp 
+                ? "bg-[#5A6355] text-white border-[#5A6355]" 
+                : "bg-white text-[#5A6355] border-[#E5E2D9] hover:bg-[#F8F7F3]"
+            }`}
+          >
+            {showHelp ? <X className="w-4 h-4" /> : <HelpCircle className="w-4 h-4 text-[#A4B494]" />}
+            {showHelp ? "Tutup Panduan" : "Butuh Bantuan?"}
+          </button>
         </div>
 
-        {/* Configuration */}
+        {/* Help Panel */}
+        {showHelp && <HelpPanel />}
+
         <ConfigurationPanel 
           config={config} 
           onChange={handleChange} 
