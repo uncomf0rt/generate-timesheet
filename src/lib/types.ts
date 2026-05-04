@@ -1,11 +1,9 @@
 export interface Config {
   adoOrg: string;
   adoProject: string;
-  adoPat: string;
   adoEmail: string;
   jiraDomain: string; // e.g. "mycompany.atlassian.net"
   jiraEmail: string;
-  jiraToken: string;
   startDate: string;
   endDate: string;
 }

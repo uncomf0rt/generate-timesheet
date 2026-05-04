@@ -4,8 +4,7 @@ import { Config } from './types';
 export const getAdoRepos = async (config: Config) => {
   const { data } = await axios.post('/api/ado/repos', {
     organization: config.adoOrg,
-    project: config.adoProject,
-    pat: config.adoPat
+    project: config.adoProject
   });
   return data.value;
 };
@@ -15,7 +14,6 @@ export const getAdoCommits = async (config: Config, repoId: string, fromDate: st
     organization: config.adoOrg,
     project: config.adoProject,
     repoId,
-    pat: config.adoPat,
     searchCriteria: {
       author: config.adoEmail,
       fromDate,
@@ -26,7 +24,7 @@ export const getAdoCommits = async (config: Config, repoId: string, fromDate: st
 };
 
 export const getJiraTasks = async (config: Config, fromDateStr: string, toDateStr: string) => {
-  if (!config.jiraDomain || !config.jiraEmail || !config.jiraToken) return [];
+  if (!config.jiraDomain || !config.jiraEmail) return [];
   
   // Format dates for JQL: YYYY-MM-DD
   const jql = `assignee=currentuser() AND updated >= "${fromDateStr}" AND updated <= "${toDateStr}"`;
@@ -35,7 +33,6 @@ export const getJiraTasks = async (config: Config, fromDateStr: string, toDateSt
     const { data } = await axios.post('/api/jira/search', {
       domain: config.jiraDomain,
       email: config.jiraEmail,
-      token: config.jiraToken,
       jql
     });
     return data.issues;

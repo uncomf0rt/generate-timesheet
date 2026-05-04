@@ -81,16 +81,6 @@ export const ConfigurationPanel: React.FC<Props> = ({ config, onChange, onGenera
                 className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
               />
             </div>
-            <div>
-              <label className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider">Personal Access Token (PAT)</label>
-              <input
-                type="password"
-                value={config.adoPat}
-                onChange={e => onChange('adoPat', e.target.value)}
-                placeholder="Tulis ADO PAT kamu"
-                className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
-              />
-            </div>
           </div>
         </div>
 
@@ -118,16 +108,6 @@ export const ConfigurationPanel: React.FC<Props> = ({ config, onChange, onGenera
                 value={config.jiraEmail}
                 onChange={e => onChange('jiraEmail', e.target.value)}
                 placeholder="email@company.com"
-                className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider">Jira API Token</label>
-              <input
-                type="password"
-                value={config.jiraToken}
-                onChange={e => onChange('jiraToken', e.target.value)}
-                placeholder="Jira API Token"
                 className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
               />
             </div>

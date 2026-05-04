@@ -33,7 +33,7 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
   
   // 2. Gather Azure DevOps Data
   let allCommits: any[] = [];
-  if (config.adoOrg && config.adoProject && config.adoPat && config.adoEmail) {
+  if (config.adoOrg && config.adoProject && config.adoEmail) {
     try {
       const repos = await getAdoRepos(config);
       await Promise.all(repos.map(async (repo: any) => {
@@ -56,7 +56,7 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
 
   // 3. Gather Jira Data
   let allTasks: any[] = [];
-  if (config.jiraDomain && config.jiraEmail && config.jiraToken) {
+  if (config.jiraDomain && config.jiraEmail) {
     try {
       const fromDateStr = format(startDate, 'yyyy-MM-dd');
       const toDateStr = format(endDate, 'yyyy-MM-dd');
@@ -72,7 +72,7 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
     
     // Check if it's a holiday
     const dayStr = format(day, 'yyyy-MM-dd');
-    const holidayInfo = holidaysData.find((h: any) => h.holiday_date === dayStr && h.is_national_holiday);
+    const holidayInfo = holidaysData.find((h: any) => h.date === dayStr);
     const isHoliday = !!holidayInfo;
     
     const isDayOff = isWeekend || isHoliday;
@@ -90,7 +90,7 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
       date: day,
       isWeekend,
       isHoliday,
-      holidayName: holidayInfo?.holiday_name,
+      holidayName: holidayInfo?.description,
       status: isDayOff ? "Libur" : "Hari kerja",
       commits: dayCommits,
       tasks: dayTasks,
