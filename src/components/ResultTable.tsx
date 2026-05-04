@@ -58,7 +58,7 @@ export const ResultTable: React.FC<Props> = ({ records, onUpdateRecord }) => {
                         >
                           <option value="Hari kerja">Hari Kerja</option>
                           <option value="Libur">
-                            {record.isHoliday ? `Libur (${record.holidayName})` : record.isWeekend ? 'Libur Akhir Pekan' : 'Libur'}
+                            {record.isHoliday ? record.holidayName : record.isWeekend ? 'Libur Akhir Pekan' : 'Libur'}
                           </option>
                         </select>
                       </td>

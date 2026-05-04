@@ -1,26 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { ResultTable } from './components/ResultTable';
 import { HelpPanel } from './components/HelpPanel';
 import { Config, DayRecord } from './lib/types';
 import { generateTimesheetData } from './lib/generator';
 import { exportToExcel, exportToPDF } from './lib/exportUtils';
-import { DownloadCloud, FileText, HelpCircle, X } from 'lucide-react';
+import { DownloadCloud, FileText, HelpCircle, X, Trash2 } from 'lucide-react';
 import { format, subDays, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 export default function App() {
-  const [config, setConfig] = useState<Config>({
-    adoOrg: '',
-    adoProject: '',
-    adoPat: '',
-    adoEmail: '',
-    jiraDomain: '',
-    jiraEmail: '',
-    jiraToken: '',
-    startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
-    endDate: format(new Date(), 'yyyy-MM-dd'),
+  const [config, setConfig] = useState<Config>(() => {
+    const savedConfig = localStorage.getItem('timesheet-config');
+    const parsedConfig = savedConfig ? JSON.parse(savedConfig) : {};
+    
+    return {
+      adoOrg: parsedConfig.adoOrg || '',
+      adoProject: parsedConfig.adoProject || '',
+      adoEmail: parsedConfig.adoEmail || '',
+      jiraDomain: parsedConfig.jiraDomain || '',
+      jiraEmail: parsedConfig.jiraEmail || '',
+      startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+      endDate: format(new Date(), 'yyyy-MM-dd'),
+    };
   });
+
+  useEffect(() => {
+    const { startDate, endDate, ...configToSave } = config;
+    localStorage.setItem('timesheet-config', JSON.stringify(configToSave));
+  }, [config]);
 
   const [records, setRecords] = useState<DayRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,9 +46,24 @@ export default function App() {
     });
   };
 
+  const handleClearSavedData = () => {
+    if (window.confirm("Apakah Anda yakin ingin menghapus data kredensial yang tersimpan?")) {
+      localStorage.removeItem('timesheet-config');
+      setConfig({
+        adoOrg: '',
+        adoProject: '',
+        adoEmail: '',
+        jiraDomain: '',
+        jiraEmail: '',
+        startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+        endDate: format(new Date(), 'yyyy-MM-dd'),
+      });
+    }
+  };
+
   const handleGenerate = async () => {
     // Validate minimally
-    if (!config.adoOrg || !config.adoProject || !config.adoPat || !config.adoEmail) {
+    if (!config.adoOrg || !config.adoProject || !config.adoEmail) {
       alert("Harap lengkapi semua isian Azure DevOps sebagai sumber utama data commits.");
       return;
     }
@@ -77,17 +100,28 @@ export default function App() {
             </p>
           </div>
           
-          <button
-            onClick={() => setShowHelp(!showHelp)}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border ${
-              showHelp 
-                ? "bg-[#5A6355] text-white border-[#5A6355]" 
-                : "bg-white text-[#5A6355] border-[#E5E2D9] hover:bg-[#F8F7F3]"
-            }`}
-          >
-            {showHelp ? <X className="w-4 h-4" /> : <HelpCircle className="w-4 h-4 text-[#A4B494]" />}
-            {showHelp ? "Tutup Panduan" : "Butuh Bantuan?"}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleClearSavedData}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border bg-white text-red-500 border-[#E5E2D9] hover:bg-red-50"
+              title="Hapus data kredensial yang tersimpan di browser"
+            >
+              <Trash2 className="w-4 h-4" />
+              Hapus Data
+            </button>
+            
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border ${
+                showHelp 
+                  ? "bg-[#5A6355] text-white border-[#5A6355]" 
+                  : "bg-white text-[#5A6355] border-[#E5E2D9] hover:bg-[#F8F7F3]"
+              }`}
+            >
+              {showHelp ? <X className="w-4 h-4" /> : <HelpCircle className="w-4 h-4 text-[#A4B494]" />}
+              {showHelp ? "Tutup Panduan" : "Butuh Bantuan?"}
+            </button>
+          </div>
         </div>
 
         {/* Help Panel */}
