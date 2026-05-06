@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["dist/**"],
+        "excludeFiles": ["src/**", "node_modules/**/*.map"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/.*",
+      "dest": "dist/index.cjs"
+    },
+    {
+      "src": "/.*",
+      "dest": "dist/index.html",
+      "methods": ["GET"]
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
+}
