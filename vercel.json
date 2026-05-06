@@ -3,27 +3,27 @@
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/node",
+      "use": "@vercel/static-build",
       "config": {
-        "includeFiles": ["dist/**"],
-        "excludeFiles": ["src/**", "node_modules/**/*.map"]
+        "distDir": "dist"
       }
+    },
+    {
+      "src": "src/api/**/*.ts",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "src/api/.*",
-      "dest": "dist/index.cjs"
+      "src": "^/api/(.*)",
+      "dest": "src/api/$1.ts"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/.*",
-      "dest": "dist/index.html",
-      "methods": ["GET"]
+      "dest": "/index.html"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "buildCommand": "bun run build",
-  "outputDirectory": "dist"
+  ]
 }
