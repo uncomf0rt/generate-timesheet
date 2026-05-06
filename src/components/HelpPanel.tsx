@@ -7,10 +7,10 @@ export const HelpPanel: React.FC = () => {
       <div className="border-b border-[#E5E2D9] pb-6">
         <h2 className="text-3xl font-serif italic text-[#3E3D39] flex items-center gap-3">
           <HelpCircle className="w-8 h-8 text-[#A4B494]" />
-          Panduan Mendapatkan Token
+          Panduan Autentikasi
         </h2>
         <p className="text-xs uppercase tracking-widest text-[#9A958A] mt-2 font-semibold">
-          Ikuti langkah-langkah di bawah ini untuk menghubungkan akun kamu
+          Aplikasi ini menggunakan PAT untuk Azure DevOps dan OAuth 2.0 untuk Jira
         </p>
       </div>
 
@@ -21,24 +21,31 @@ export const HelpPanel: React.FC = () => {
             <div className="bg-[#5A6355] p-2 rounded-xl">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
-            <h3 className="text-xl font-serif italic text-[#3E3D39]">Azure DevOps (PAT)</h3>
+            <h3 className="text-xl font-serif italic text-[#3E3D39]">Azure DevOps PAT</h3>
           </div>
           
           <div className="space-y-4 text-sm text-[#5A6355] leading-relaxed">
-            <p>Personal Access Token (PAT) digunakan sebagai pengganti password untuk aplikasi ini mengakses commit kamu.</p>
-            <ol className="list-decimal pl-5 space-y-3 marker:font-bold">
-              <li>Masuk ke akun <span className="font-bold">Azure DevOps</span> kamu.</li>
-              <li>Klik ikon <span className="font-bold underline italic">User Settings</span> di pojok kanan atas (samping foto profil).</li>
-              <li>Pilih menu <span className="font-bold italic">Personal Access Tokens</span>.</li>
-              <li>Klik tombol <span className="font-bold text-[#A4B494]">+ New Token</span>.</li>
-              <li>Beri nama (misal: "Timesheet Generator").</li>
-              <li>Pada bagian <span className="font-bold">Scopes</span>, pilih <span className="font-bold">Custom Defined</span>.</li>
-              <li>Cari <span className="font-bold">Code</span> dan centang <span className="font-bold">Read</span>. Ini cukup untuk membaca commit.</li>
-              <li>Klik <span className="font-bold italic uppercase tracking-tighter">Create</span>.</li>
-              <li className="text-[#B8865D] font-medium bg-[#E7AB79]/10 p-2 rounded-lg border border-[#E7AB79]/20">
-                Salin token tersebut sekarang! Azure tidak akan menampilkannya lagi.
-              </li>
-            </ol>
+            <p>Gunakan Personal Access Token (PAT) untuk memberikan akses aman ke Azure DevOps tanpa menyimpan password Anda.</p>
+            
+            <div className="bg-[#E7F5E4] border border-[#5A6355]/20 rounded-2xl p-4">
+              <p className="font-semibold text-[#5A6355] mb-3">Cara Membuat PAT:</p>
+              <ol className="list-decimal pl-5 space-y-2 text-xs marker:font-bold">
+                <li>Buka <span className="font-bold">Azure DevOps</span> di <a href="https://dev.azure.com/" target="_blank" className="text-[#A4B494] hover:underline">dev.azure.com</a></li>
+                <li>Klik foto profil Anda di kanan atas</li>
+                <li>Pilih <span className="font-bold">Personal access tokens</span></li>
+                <li>Klik <span className="font-bold">+ New Token</span></li>
+                <li>Isi nama token (misal: "Timesheet Generator")</li>
+                <li>Pilih <span className="font-bold">Organization: All accessible organizations</span></li>
+                <li>Di bawah <span className="font-bold">Scopes</span>, pilih <span className="font-bold">Read &amp; execute</span> untuk Code</li>
+                <li>Klik <span className="font-bold">Create</span> dan copy token yang dihasilkan</li>
+                <li>Paste token ke kolom PAT di Configuration Panel</li>
+              </ol>
+            </div>
+            
+            <p className="text-xs text-[#B8865D] bg-[#E7AB79]/10 p-3 rounded-lg border border-[#E7AB79]/20">
+              <span className="font-semibold">⚠️ Penting:</span> Jangan bagikan PAT Anda kepada orang lain. Disarankan untuk membuat PAT baru setiap kali diperlukan, atau atur expiration date agar otomatis hangus.
+            </p>
+            
             <a 
               href="https://dev.azure.com/" 
               target="_blank" 
@@ -55,28 +62,57 @@ export const HelpPanel: React.FC = () => {
             <div className="bg-[#A4B494] p-2 rounded-xl">
               <Key className="w-5 h-5 text-white" />
             </div>
-            <h3 className="text-xl font-serif italic text-[#3E3D39]">Jira API Token</h3>
+            <h3 className="text-xl font-serif italic text-[#3E3D39]">Jira OAuth (Opsional)</h3>
           </div>
 
           <div className="space-y-4 text-sm text-[#5A6355] leading-relaxed">
-            <p>Untuk Jira Cloud (Atlassian), kamu memerlukan API Token khusus akun Atlassian kamu.</p>
-            <ol className="list-decimal pl-5 space-y-3 marker:font-bold">
-              <li>Masuk ke <span className="font-bold italic underline">Atlassian Security Settings</span> melalui link di bawah.</li>
-              <li>Klik tombol <span className="font-bold text-[#A4B494]">Create API token</span>.</li>
-              <li>Beri label (misal: "Timesheet Generator").</li>
-              <li>Klik <span className="font-bold uppercase tracking-tighter italic">Create</span>.</li>
-              <li className="text-[#B8865D] font-medium bg-[#E7AB79]/10 p-2 rounded-lg border border-[#E7AB79]/20">
-                Salin API token tersebut segera. Token ini akan digunakan bersama email akun Jira kamu.
-              </li>
-              <li>Pastikan <span className="font-bold italic">Jira Domain</span> sesuai (misal: "nama-perusahaan.atlassian.net").</li>
-            </ol>
+            <p>Hubungkan Jira Cloud untuk mendapatkan data task yang ditugaskan kepada Anda.</p>
+            
+            <div className="bg-[#E7F5E4] border border-[#5A6355]/20 rounded-2xl p-4">
+              <p className="font-semibold text-[#5A6355] mb-2">Cara Menggunakan:</p>
+              <ol className="list-decimal pl-5 space-y-2 text-xs marker:font-bold">
+                <li>Klik tombol <span className="font-bold">"Sign in with Jira"</span> di Configuration Panel</li>
+                <li>Anda akan diarahkan ke Atlassian Login</li>
+                <li>Masuk dengan akun Atlassian Anda</li>
+                <li>Setujui permintaan akses ke Jira</li>
+                <li>Aplikasi akan mendapatkan token akses secara otomatis</li>
+              </ol>
+            </div>
+
+            <div className="bg-[#FFF4E6] border border-[#E7AB79]/30 rounded-2xl p-4">
+              <p className="text-xs text-[#5A6355] mb-2"><span className="font-semibold">Persyaratan:</span></p>
+              <ul className="list-disc pl-5 space-y-1 text-xs text-[#5A6355]">
+                <li>Pastikan domain Jira Anda benar (misal: company.atlassian.net)</li>
+                <li>Koneksi Jira bersifat opsional - Anda tetap bisa membuat timesheet tanpa Jira</li>
+              </ul>
+            </div>
+            
             <a 
-              href="https://id.atlassian.com/manage-profile/security/api-tokens" 
+              href="https://www.atlassian.com/software/jira" 
               target="_blank" 
               className="inline-flex items-center text-[#A4B494] font-bold hover:underline gap-1 text-xs uppercase"
             >
-              Buka Atlassian Security <ExternalLink className="w-3 h-3" />
+              Pelajari Jira Cloud <ExternalLink className="w-3 h-3" />
             </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Security Info */}
+      <div className="border-t border-[#E5E2D9] pt-8">
+        <h3 className="text-lg font-serif italic text-[#3E3D39] mb-4">Keamanan & Privasi</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-[#5A6355]">
+          <div className="bg-[#F8F7F3] rounded-2xl p-4">
+            <p className="font-semibold mb-2">✓ Terenkripsi</p>
+            <p className="text-xs">Token disimpan dengan aman di browser Anda, bukan di server.</p>
+          </div>
+          <div className="bg-[#F8F7F3] rounded-2xl p-4">
+            <p className="font-semibold mb-2">✓ Terkontrol</p>
+            <p className="text-xs">Anda dapat memutuskan koneksi kapan saja dengan klik "Disconnect".</p>
+          </div>
+          <div className="bg-[#F8F7F3] rounded-2xl p-4">
+            <p className="font-semibold mb-2">✓ Minimal Access</p>
+            <p className="text-xs">Aplikasi hanya meminta izin yang diperlukan untuk membaca data.</p>
           </div>
         </div>
       </div>

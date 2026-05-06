@@ -1,13 +1,26 @@
+export interface OAuthToken {
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  expiresAt?: number;
+  tokenType: string;
+}
+
+export interface JiraOAuthConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  authorizationServerUrl: string; // e.g. https://auth.atlassian.com
+}
+
 export interface Config {
   adoOrg: string;
   adoProject: string;
-  adoPat: string;
   adoEmail: string;
-  jiraDomain: string; // e.g. "mycompany.atlassian.net"
-  jiraEmail: string;
-  jiraToken: string;
+  azurePat: string;
   startDate: string;
   endDate: string;
+  jiraToken?: OAuthToken;
 }
 
 export interface DayRecord {
