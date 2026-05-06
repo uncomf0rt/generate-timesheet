@@ -15,7 +15,7 @@ export const ResultTable: React.FC<Props> = ({ records, onUpdateRecord }) => {
     <div className="mt-8 flex flex-col">
       <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
         <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-          <div className="overflow-hidden border border-[#E5E2D9] rounded-[24px]">
+          <div className="overflow-hidden border border-[#E5E2D9] rounded-3xl">
             <table className="min-w-full divide-y divide-[#E5E2D9]">
               <thead className="bg-[#EAE7DF]">
                 <tr>

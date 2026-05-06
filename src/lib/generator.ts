@@ -33,7 +33,7 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
   
   // 2. Gather Azure DevOps Data
   let allCommits: any[] = [];
-  if (config.adoOrg && config.adoProject && config.adoEmail) {
+  if (config.adoOrg && config.adoProject && config.azurePat) {
     try {
       const repos = await getAdoRepos(config);
       await Promise.all(repos.map(async (repo: any) => {
@@ -56,13 +56,13 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
 
   // 3. Gather Jira Data
   let allTasks: any[] = [];
-  if (config.jiraDomain && config.jiraEmail) {
+  if (config.jiraToken) {
     try {
       const fromDateStr = format(startDate, 'yyyy-MM-dd');
       const toDateStr = format(endDate, 'yyyy-MM-dd');
       allTasks = await getJiraTasks(config, fromDateStr, toDateStr);
     } catch (e) {
-      console.error("Failed to fetch Jira Tasks");
+      console.error("Failed to fetch Jira Tasks: ", e);
     }
   }
 
@@ -78,6 +78,7 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
     const isDayOff = isWeekend || isHoliday;
     
     // Filter commits for this day
+    // With OAuth, we get all commits from the authenticated user
     const dayCommits = allCommits.filter(c => isSameDay(new Date(c.author.date), day))
       .map(c => `[${c.repoName}] ${c.comment}`);
       

@@ -1,3 +1,5 @@
+window.__CRITERION__ = { getFeatureFlagOverride: () => false };
+
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
