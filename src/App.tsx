@@ -50,20 +50,14 @@ export default function App() {
   // Handle OAuth callback from URL parameters (Backend-only flow)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const oauthSuccess = params.get("oauth_success");
-    const state = params.get("state");
-    const error = params.get("error");
-    const errorDescription = params.get("error_description");
+    const jiraToken = params.get("jira_token");
 
-    if (error) {
-      setOAuthError(`${error}: ${errorDescription || "Unknown error"}`);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      return;
-    }
+    if (jiraToken) {
+      const parsed = JSON.parse(decodeURIComponent(jiraToken));
+      localStorage.setItem("jiraToken", JSON.stringify(parsed));
 
-    if (oauthSuccess === "jira" && state) {
-      setOAuthCallbackData({ service: "jira", state });
-      window.history.replaceState({}, document.title, window.location.pathname);
+      window.history.replaceState({}, document.title, "/");
+      window.location.reload();
     }
   }, []);
 
