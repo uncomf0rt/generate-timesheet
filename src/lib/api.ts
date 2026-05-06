@@ -8,9 +8,8 @@ export const initiateJiraOAuth = async () => {
   return data.url;
 };
 
-export const exchangeJiraAuthCode = async (code: string, state: string) => {
-  const { data } = await axios.post('/api/auth/jira/callback', { code, state });
-  console.log('data: ', data);
+export const retrieveJiraToken = async (state: string) => {
+  const { data } = await axios.post('/api/auth/jira/token', { state });
   return data.token as OAuthToken;
 };
 

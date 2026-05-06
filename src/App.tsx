@@ -18,7 +18,6 @@ export default function App() {
   const [jiraLoginLoading, setJiraLoginLoading] = useState(false);
   const [oauthCallbackData, setOAuthCallbackData] = useState<{
     service: "jira";
-    code: string;
     state: string;
   } | null>(null);
   const [oauthError, setOAuthError] = useState<string | null>(null);
@@ -48,10 +47,10 @@ export default function App() {
     if (savedJiraToken) setJiraToken(savedJiraToken);
   }, []);
 
-  // Handle OAuth callback from URL parameters (Jira only now)
+  // Handle OAuth callback from URL parameters (Backend-only flow)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
+    const oauthSuccess = params.get("oauth_success");
     const state = params.get("state");
     const error = params.get("error");
     const errorDescription = params.get("error_description");
@@ -62,8 +61,8 @@ export default function App() {
       return;
     }
 
-    if (code && state) {
-      setOAuthCallbackData({ service: "jira", code, state });
+    if (oauthSuccess === "jira" && state) {
+      setOAuthCallbackData({ service: "jira", state });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -186,7 +185,6 @@ export default function App() {
     return (
       <OAuthCallback
         service={oauthCallbackData.service}
-        code={oauthCallbackData.code}
         state={oauthCallbackData.state}
         onSuccess={handleOAuthSuccess}
         onError={handleOAuthError}

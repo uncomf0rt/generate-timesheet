@@ -9,7 +9,7 @@ import crypto from 'crypto';
 dotenv.config();
 
 // Store for OAuth states and tokens (in production, use a session store or database)
-const oauthStates = new Map<string, { timestamp: number; service: string }>();
+const oauthStates = new Map<string, { timestamp: number; service: string; jiraToken?: any }>();
 const userTokens = new Map<string, { azure?: any; jira?: any }>();
 
 function generatePKCE() {
@@ -140,7 +140,7 @@ async function startServer() {
   // Jira OAuth - Get Authorization URL
   app.get("/api/auth/jira/authorize-url", (req, res) => {
     const clientId = process.env.JIRA_CLIENT_ID;
-    const redirectUri = process.env.JIRA_REDIRECT_URI || "http://localhost:3000/auth/jira/callback";
+    const redirectUri = process.env.JIRA_REDIRECT_URI ?? 'http://localhost:3000/api/auth/jira/callback';
 
     if (!clientId) {
       return res.status(500).json({ error: "JIRA_CLIENT_ID not configured" });
@@ -164,30 +164,38 @@ async function startServer() {
     res.json({ url });
   });
 
-  // Jira OAuth - Callback
-  app.post("/api/auth/jira/callback", async (req, res) => {
-    const { code, state } = req.body;
-    const clientId = process.env.JIRA_CLIENT_ID;
-    const clientSecret = process.env.JIRA_CLIENT_SECRET;
-    const redirectUri = process.env.JIRA_REDIRECT_URI || "http://localhost:3000/auth/jira/callback";
+  // Jira OAuth - Callback (GET - Jira redirects here, backend exchanges code)
+  app.get("/api/auth/jira/callback", async (req, res) => {
+    const { code, state, error, error_description } = req.query;
 
-    if (!clientId || !clientSecret) {
-      return res.status(500).json({ error: "Jira OAuth credentials not configured" });
+    // If there's an OAuth error, redirect back to main page with error params
+    if (error) {
+      const errorParams = new URLSearchParams({
+        error: error as string,
+        error_description: (error_description as string) || "Unknown error"
+      });
+      return res.redirect(`/?${errorParams.toString()}`);
     }
 
-    if (!oauthStates.has(state)) {
-      return res.status(400).json({ error: "Invalid state parameter" });
+    // Validate state
+    if (!state || !oauthStates.has(state as string)) {
+      return res.redirect("/?error=invalid_state&error_description=Invalid state parameter");
+    }
+
+    if (!code) {
+      return res.redirect("/?error=missing_code&error_description=Missing authorization code");
     }
 
     try {
+      // Exchange authorization code for access token (BACKEND ONLY)
       const tokenResponse = await axios.post(
         "https://auth.atlassian.com/oauth/token",
         {
           grant_type: "authorization_code",
-          client_id: clientId,
-          client_secret: clientSecret,
-          code,
-          redirect_uri: redirectUri
+          client_id: process.env.JIRA_CLIENT_ID,
+          client_secret: process.env.JIRA_CLIENT_SECRET,
+          code: code as string,
+          redirect_uri: process.env.JIRA_REDIRECT_URI
         }
       );
 
@@ -196,14 +204,48 @@ async function startServer() {
         refreshToken: tokenResponse.data.refresh_token,
         expiresIn: tokenResponse.data.expires_in,
         expiresAt: Date.now() + tokenResponse.data.expires_in * 1000,
-        tokenType: tokenResponse.data.token_type
+        tokenType: tokenResponse.data.token_type || 'Bearer'
       };
 
-      oauthStates.delete(state);
-      res.json({ token });
+      // Store token in memory using state as key
+      const stateStr = state as string;
+      const oauthRecord = oauthStates.get(stateStr);
+      if (oauthRecord) {
+        oauthStates.set(stateStr, {
+          ...oauthRecord,
+          jiraToken: token
+        });
+      }
+
+      // Redirect to frontend with success and state
+      res.redirect(`/?oauth_success=jira&state=${stateStr}`);
     } catch (error: any) {
-      res.status(400).json({ error: error.response?.data || error.message });
+      console.error("Jira OAuth token exchange error:", error.response?.data || error.message);
+      const errorParams = new URLSearchParams({
+        error: "token_exchange_failed",
+        error_description: error.response?.data?.error_description || error.message
+      });
+      res.redirect(`/?${errorParams.toString()}`);
     }
+  });
+
+  // Retrieve stored Jira token (called by frontend after successful callback)
+  app.post("/api/auth/jira/token", (req, res) => {
+    const { state } = req.body;
+
+    if (!state) {
+      return res.status(400).json({ error: "Missing state parameter" });
+    }
+
+    const oauthRecord = oauthStates.get(state);
+    if (!oauthRecord || !oauthRecord.jiraToken) {
+      return res.status(404).json({ error: "Token not found or expired" });
+    }
+
+    const token = oauthRecord.jiraToken;
+    oauthStates.delete(state); // Clean up after retrieval
+
+    res.json({ token });
   });
 
   // Jira Token Refresh
