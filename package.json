@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "tsx src/api/index.ts",
     "start": "node dist/index.cjs",
     "build": "vite build && tsx ./build-server.ts",
     "preview": "vite preview",

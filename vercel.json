@@ -12,7 +12,7 @@
   ],
   "routes": [
     {
-      "src": "/api/.*",
+      "src": "src/api/.*",
       "dest": "dist/index.cjs"
     },
     {
@@ -24,6 +24,6 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "buildCommand": "npm run build",
+  "buildCommand": "bun run build",
   "outputDirectory": "dist"
 }
