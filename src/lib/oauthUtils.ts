@@ -7,8 +7,8 @@ const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes before actual expiry
  * Check if a token is expired or about to expire
  */
 export function isTokenExpired(token?: OAuthToken): boolean {
-  if (!token || !token.expiresAt) return true;
-  return Date.now() > token.expiresAt - TOKEN_EXPIRY_BUFFER;
+  if (!token || !token.expires_in) return true;
+  return Date.now() > token.expires_in - TOKEN_EXPIRY_BUFFER;
 }
 
 /**
@@ -37,9 +37,9 @@ export async function ensureJiraTokenValid(token?: OAuthToken): Promise<OAuthTok
   if (!token) return null;
   
   if (isTokenExpired(token)) {
-    if (!token.refreshToken) return null;
+    if (!token.refresh_token) return null;
     try {
-      return await api.refreshJiraToken(token.refreshToken);
+      return await api.refreshJiraToken(token.refresh_token);
     } catch (error) {
       console.error('Failed to refresh Jira token:', error);
       return null;
@@ -53,7 +53,7 @@ export async function ensureJiraTokenValid(token?: OAuthToken): Promise<OAuthTok
  * Get formatted token for authorization header
  */
 export function getAuthorizationHeader(token: OAuthToken): string {
-  return `${token.tokenType || 'Bearer'} ${token.accessToken}`;
+  return `${token.token_type || 'Bearer'} ${token.access_token}`;
 }
 
 /**

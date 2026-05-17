@@ -1,9 +1,8 @@
 export interface OAuthToken {
-  accessToken: string;
-  refreshToken?: string;
-  expiresIn?: number;
-  expiresAt?: number;
-  tokenType: string;
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  token_type: string;
 }
 
 export interface JiraOAuthConfig {

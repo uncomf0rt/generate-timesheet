@@ -33,12 +33,12 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
   
   // 2. Gather Azure DevOps Data
   let allCommits: any[] = [];
-  if (config.adoOrg && config.adoProject && config.azurePat) {
+  if (config.adoOrg && config.adoProject && config.azurePat && config.adoEmail) {
     try {
       const repos = await getAdoRepos(config);
       await Promise.all(repos.map(async (repo: any) => {
         try {
-          const commits = await getAdoCommits(config, repo.id, fromIso, toIso);
+          const commits = await getAdoCommits({ ...config, repoId: repo.id, startDate: fromIso, endDate: toIso });
           if (commits && commits.length > 0) {
             allCommits.push(...commits.map((c: any) => ({
               ...c,
@@ -55,12 +55,13 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
   }
 
   // 3. Gather Jira Data
-  let allTasks: any[] = [];
+  let allTasks: any = [];
+  console.log('config.jiraToken', config.jiraToken?.access_token);
   if (config.jiraToken) {
     try {
       const fromDateStr = format(startDate, 'yyyy-MM-dd');
       const toDateStr = format(endDate, 'yyyy-MM-dd');
-      allTasks = await getJiraTasks(config, fromDateStr, toDateStr);
+      allTasks = await getJiraTasks({...config, startDate: fromDateStr, endDate: toDateStr});
     } catch (e) {
       console.error("Failed to fetch Jira Tasks: ", e);
     }
@@ -84,8 +85,8 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
       
     // Filter tasks for this day (Mock behavior: assigning tasks updated on this day)
     // Jira fields depend on the config, but we can look at updated date
-    const dayTasks = allTasks.filter(t => t.fields?.updated && isSameDay(new Date(t.fields.updated), day))
-      .map(t => `[${t.key}] ${t.fields?.summary || ''}`);
+    const dayTasks = allTasks.filter((t: any) => t.fields?.updated && isSameDay(new Date(t.fields.updated), day))
+      .map((t: any) => `[${t.key}] ${t.fields?.summary || ''}`);
 
     return {
       date: day,
