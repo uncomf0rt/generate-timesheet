@@ -1,6 +1,11 @@
 import axios from 'axios';
-import { Config, OAuthToken } from './types';
+import { Config, OAuthToken, ADOProject } from './types';
 import { toDate } from 'date-fns';
+
+// Helper to create Basic Auth token from PAT
+const createBasicAuth = (pat: string) => {
+  return 'Basic ' + Buffer.from(`:${pat}`).toString('base64');
+};
 
 // Jira OAuth endpoints
 export const initiateJiraOAuth = async () => {
@@ -19,6 +24,16 @@ export const refreshJiraToken = async (refreshToken: string) => {
 };
 
 // Azure DevOps API (using PAT)
+export const getAdoProjects = async (pat: string, org: string) => {
+  const { data } = await axios.get('/api/ado/projects', {
+    headers: {
+      Authorization: createBasicAuth(pat),
+    },
+    params: { org },
+  }) as any;
+  return data.projects as ADOProject[];
+};
+
 export const getAdoRepos = async (config: Config) => {
   const { data: { repositories } } = await axios.post('/api/ado/repos', {
     organization: config.adoOrg,
@@ -45,11 +60,10 @@ export const getAdoCommits = async (config: Omit<Config, 'jiraToken'> & { repoId
 
 // Jira API (using OAuth)
 export const getJiraTasks = async (config: Config) => {
-  console.log('token: ', config.jiraToken?.access_token);
   if (!config.jiraToken?.access_token) {
     return [];
   }
-  // Format dates for JQL: YYYY-MM-DD (without quotes per Jira REST API v3 specification)
+  
   const jql = `assignee = currentUser() AND updated >= ${config.startDate} AND updated <= ${config.endDate}`;
   
   try {
@@ -59,6 +73,10 @@ export const getJiraTasks = async (config: Config) => {
     });
     return data.issues;
   } catch (error: any) {
+    // If 401 (token expired/invalid), throw specific error so caller can handle
+    if (error.response?.status === 401) {
+      throw new Error('JIRA_TOKEN_EXPIRED');
+    }
     console.error("Failed to fetch Jira tasks", error);
     return [];
   }

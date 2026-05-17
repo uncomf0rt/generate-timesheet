@@ -32,3 +32,8 @@ export interface DayRecord {
   editableActivity?: string;
   status: "Hari kerja" | "Libur";
 }
+
+export interface ADOProject {
+  id: string;
+  name: string;
+}
