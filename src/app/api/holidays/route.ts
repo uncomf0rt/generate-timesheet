@@ -2,9 +2,9 @@ import axios from "axios";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = await req.nextUrl;
-  const year = searchParams.get("year");
-  const month = searchParams.get("month");
+  const { searchParams } = req.nextUrl;
+  const year = searchParams.get("year") || "";
+  const month = searchParams.get("month") || "";
 
   try {
     const response = await axios.get(
