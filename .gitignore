@@ -9,3 +9,6 @@ coverage/
 bun.lock
 package-lock.json
 .vercel
+.next/
+.trae/
+next-env.d.ts
