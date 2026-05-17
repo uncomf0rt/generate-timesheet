@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { HelpCircle, ExternalLink, ShieldCheck, Key } from 'lucide-react';
 
 export const HelpPanel: React.FC = () => {
@@ -114,6 +115,14 @@ export const HelpPanel: React.FC = () => {
             <p className="font-semibold mb-2">✓ Minimal Access</p>
             <p className="text-xs">Aplikasi hanya meminta izin yang diperlukan untuk membaca data.</p>
           </div>
+        </div>
+        <div className="mt-6 text-center">
+          <Link
+            href="/privacy"
+            className="inline-flex items-center text-xs uppercase tracking-widest text-[#9A958A] font-semibold hover:text-[#A4B494] transition-colors gap-1"
+          >
+            Lihat Privacy Policy <ExternalLink className="w-3 h-3" />
+          </Link>
         </div>
       </div>
     </div>
