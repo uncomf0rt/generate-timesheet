@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { ConfigurationPanel } from "@/components/ConfigurationPanel";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { ResultTable } from "@/components/ResultTable";
 import { HelpPanel } from "@/components/HelpPanel";
 import { OAuthCallback } from "@/components/OAuthCallback";
@@ -12,6 +12,8 @@ import * as api from "@/lib/api";
 import { DownloadCloud, FileText, HelpCircle, X, Trash2 } from "lucide-react";
 import { format, subDays, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
+
+const ConfigurationPanel = dynamic(() => import("@/components/ConfigurationPanel"), { ssr: false });
 
 export default function App() {
   // Jira OAuth Token Management
@@ -39,17 +41,19 @@ export default function App() {
     };
   });
 
-  const [records, setRecords] = useState<DayRecord[]>([]);
+  const [records, setRecords] = useState<{ records: DayRecord[], jiraTokenExpired: boolean }>({
+    records: [],
+    jiraTokenExpired: false,
+  });
   const [loading, setLoading] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [jiraTokenExpired, setJiraTokenExpired] = useState(false);
 
   // Smooth scroll to results when records are loaded
   useEffect(() => {
-    if (records.length > 0) {
+    if (records.records.length > 0) {
       document.getElementById('preview')?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [records.length]);
+  }, [records.records.length]);
 
   // Initialize Jira token from storage on component mount
   useEffect(() => {
@@ -121,9 +125,9 @@ export default function App() {
     value: any,
   ) => {
     setRecords((prev) => {
-      const newRecords = [...prev];
+      const newRecords = [...prev.records];
       newRecords[index] = { ...newRecords[index], [field]: value };
-      return newRecords;
+      return { ...prev, records: newRecords };
     });
   };
 
@@ -174,7 +178,6 @@ export default function App() {
     }
 
     setLoading(true);
-    setJiraTokenExpired(false);
     try {
       // Pass Jira token if available
       const configWithTokens: Config = {
@@ -183,8 +186,7 @@ export default function App() {
       };
 
       const { records: newRecords, jiraTokenExpired: expired } = await generateTimesheetData(configWithTokens);
-      setRecords(newRecords);
-      setJiraTokenExpired(expired);
+      setRecords({ records: newRecords, jiraTokenExpired: expired });
     } catch (e: any) {
       alert("Terjadi kesalahan: " + (e.message || "Gagal memproses data."));
     } finally {
@@ -275,7 +277,7 @@ export default function App() {
         />
 
         {/* Results */}
-        {records.length > 0 && (
+        {records.records.length > 0 && (
             <div className="bg-white rounded-[40px] border border-[#E5E2D9] shadow-sm p-8 md:p-10 space-y-8">
               <div className="flex flex-col md:flex-row justify-between items-center border-b border-[#E5E2D9] pb-6 gap-6">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full">
@@ -293,7 +295,7 @@ export default function App() {
                       })}
                     </p>
                   </div>
-                  {jiraTokenExpired && (
+                  {records.jiraTokenExpired && (
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2 text-xs text-amber-700">
                       Jira token expired. Please reconnect to include tasks.
                     </div>
@@ -302,7 +304,7 @@ export default function App() {
                 <div className="flex flex-wrap items-center gap-4 shrink-0">
                   <button
                     onClick={() =>
-                      exportToPDF(records, config.startDate, config.endDate)
+                      exportToPDF(records.records, config.startDate, config.endDate)
                     }
                     className="px-6 py-2.5 bg-white rounded-full border border-[#E5E2D9] text-xs font-bold uppercase tracking-wider text-[#5A6355] shadow-sm flex items-center gap-2 hover:bg-[#F8F7F3] transition-colors"
                   >
@@ -311,7 +313,7 @@ export default function App() {
                   </button>
                   <button
                     onClick={() =>
-                      exportToExcel(records, config.startDate, config.endDate)
+                      exportToExcel(records.records, config.startDate, config.endDate)
                     }
                     className="px-6 py-2.5 bg-[#5A6355] text-[#F8F7F3] rounded-full text-xs font-bold uppercase tracking-wider shadow-md flex items-center gap-2 hover:bg-[#4A5246] transition-colors"
                   >
@@ -322,7 +324,7 @@ export default function App() {
               </div>
 
               <ResultTable
-                records={records}
+                records={records.records}
                 onUpdateRecord={handleUpdateRecord}
               />
             </div>
