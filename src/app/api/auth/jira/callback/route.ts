@@ -1,6 +1,14 @@
 import { NextRequest } from "next/server";
 import axios from "axios";
 
+function getJiraRedirectUri() {
+  if (process.env.JIRA_REDIRECT_URI) return process.env.JIRA_REDIRECT_URI;
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}/api/auth/jira/callback`;
+  }
+  return "http://localhost:3000/api/auth/jira/callback";
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
@@ -22,7 +30,7 @@ export async function GET(req: NextRequest) {
         client_id: process.env.JIRA_CLIENT_ID,
         client_secret: process.env.JIRA_CLIENT_SECRET,
         code,
-        redirect_uri: process.env.JIRA_REDIRECT_URI,
+        redirect_uri: getJiraRedirectUri(),
       }
     );
 
