@@ -33,22 +33,27 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
   
   // 2. Gather Azure DevOps Data
   let allCommits: any[] = [];
-  if (config.adoOrg && config.adoProject && config.azurePat && config.adoEmail) {
+  const projects = config.adoProject.split(',').map(p => p.trim()).filter(Boolean);
+  if (config.adoOrg && projects.length > 0 && config.azurePat && config.adoEmail) {
     try {
-      const repos = await getAdoRepos(config);
-      await Promise.all(repos.map(async (repo: any) => {
-        try {
-          const commits = await getAdoCommits({ ...config, repoId: repo.id, startDate: fromIso, endDate: toIso });
-          if (commits && commits.length > 0) {
-            allCommits.push(...commits.map((c: any) => ({
-              ...c,
-              repoName: repo.name
-            })));
+      for (const project of projects) {
+        const projectConfig = { ...config, adoProject: project };
+        const repos = await getAdoRepos(projectConfig);
+        await Promise.all(repos.map(async (repo: any) => {
+          try {
+            const commits = await getAdoCommits({ ...projectConfig, repoId: repo.id, startDate: fromIso, endDate: toIso });
+            if (commits && commits.length > 0) {
+              allCommits.push(...commits.map((c: any) => ({
+                ...c,
+                repoName: repo.name,
+                projectName: project
+              })));
+            }
+          } catch (e) {
+            console.warn(`Failed to fetch commits for repo ${repo.name} in project ${project}`);
           }
-        } catch (e) {
-          console.warn(`Failed to fetch commits for repo ${repo.name}`);
-        }
-      }));
+        }));
+      }
     } catch (e) {
       console.error("Failed to fetch ADO Repos");
     }
@@ -56,14 +61,18 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
 
   // 3. Gather Jira Data
   let allTasks: any = [];
-  console.log('config.jiraToken', config.jiraToken?.access_token);
+  let jiraTokenExpired = false;
   if (config.jiraToken) {
     try {
       const fromDateStr = format(startDate, 'yyyy-MM-dd');
       const toDateStr = format(endDate, 'yyyy-MM-dd');
       allTasks = await getJiraTasks({...config, startDate: fromDateStr, endDate: toDateStr});
-    } catch (e) {
-      console.error("Failed to fetch Jira Tasks: ", e);
+    } catch (e: any) {
+      if (e.message === 'JIRA_TOKEN_EXPIRED') {
+        jiraTokenExpired = true;
+      } else {
+        console.error("Failed to fetch Jira Tasks: ", e);
+      }
     }
   }
 
@@ -100,5 +109,8 @@ export async function generateTimesheetData(config: Config): Promise<DayRecord[]
     };
   });
 
-  return records;
+  return {
+    records,
+    jiraTokenExpired
+  };
 }

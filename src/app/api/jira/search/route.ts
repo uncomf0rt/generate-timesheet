@@ -17,8 +17,15 @@ export async function POST(req: NextRequest) {
           Accept: 'application/json',
         }
       });
+      if (!data || data.length === 0) {
+        return Response.json({ error: "No Jira resources found" }, { status: 401 });
+      }
       cloudId = data[0].id;
     } catch (error: any) {
+      // Return 401 for auth errors (expired/invalid token)
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        return Response.json({ error: "Token expired or invalid" }, { status: 401 });
+      }
       return Response.json({ error: "Failed to fetch cloud ID" }, { status: error.response?.status || 500 });
     }
 
