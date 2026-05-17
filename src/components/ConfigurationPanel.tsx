@@ -75,6 +75,16 @@ export const ConfigurationPanel: React.FC<Props> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Auto-fetch projects when org or PAT changes (including on mount)
+  useEffect(() => {
+    if (config.adoOrg && config.azurePat) {
+      fetchProjects(config.adoOrg, config.azurePat);
+    } else {
+      setProjects([]);
+      setSelectedProjects([]);
+    }
+  }, [config.adoOrg, config.azurePat]);
+
   // Fetch projects when org or PAT changes
   const fetchProjects = useCallback(async (org: string, pat: string) => {
     if (!org || !pat) {
@@ -105,16 +115,11 @@ export const ConfigurationPanel: React.FC<Props> = ({
     }
   };
 
-  // Handle org change - fetch projects
+  // Handle org change
   const handleOrgChange = (value: string) => {
     onChange('adoOrg', value);
     onChange('adoProject', '');
     setSelectedProjects([]);
-    if (value && config.azurePat) {
-      fetchProjects(value, config.azurePat);
-    } else {
-      setProjects([]);
-    }
   };
 
   // Handle project toggle (multiselect)
@@ -205,7 +210,7 @@ export const ConfigurationPanel: React.FC<Props> = ({
 
             {/* 4. Project Dropdown (Multiselect) */}
             <div ref={projectDropdownRef}>
-              <label className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider">Project (multiselect)</label>
+              <label className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider">Projects</label>
               <div className="relative">
                 <button
                   type="button"
