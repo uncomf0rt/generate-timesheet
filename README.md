@@ -1,20 +1,33 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Auto Timesheet Generator
 
-# Run and deploy your AI Studio app
+Generate timesheets from Azure DevOps commits and Jira issues.
 
-This contains everything you need to run your app locally.
+## Contributors
 
-View your app in AI Studio: https://ai.studio/apps/6bad9215-2618-4152-b493-5d08db27be29
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+<table>
+<tbody>
+<tr>
+    <td align="center">
+        <a href="https://github.com/rizkyliandika">
+            <img src="https://avatars.githubusercontent.com/u/52333369?v=4" width="100;" alt="rizkyliandika"/>
+            <br />
+            <sub><b>rizkyliandika</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/dimsp4">
+            <img src="https://avatars.githubusercontent.com/u/68719274?v=4" width="100;" alt="dimsp4"/>
+            <br />
+            <sub><b>dimsp4</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/yosyoss">
+            <img src="https://avatars.githubusercontent.com/u/47955811?v=4" width="100;" alt="yosyoss"/>
+            <br />
+            <sub><b>yosyoss</b></sub>
+        </a>
+    </td>
+</tr>
+</tbody>
+</table>
