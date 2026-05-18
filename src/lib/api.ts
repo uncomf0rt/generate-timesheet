@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { Config, OAuthToken, ADOProject } from './types';
-import { toDate } from 'date-fns';
 
 // Helper to create Basic Auth token from PAT
 const createBasicAuth = (pat: string) => {
@@ -84,7 +83,13 @@ export const getJiraTasks = async (config: Config) => {
 
 export const getHolidays = async (year: number, month: number) => {
   try {
-    const { data } = await axios.get(`/api/holidays/${year}/${month+1}`);
+
+    const { data } = await axios.get(`/api/holidays`, {
+      params: {
+        year,
+        month: month + 1
+      }
+    });
     return data;
   } catch (error) {
     return [];

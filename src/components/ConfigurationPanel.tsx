@@ -16,7 +16,7 @@ interface Props {
 
 type JiraStatus = 'checking' | 'valid' | 'invalid' | 'disconnected';
 
-export const ConfigurationPanel: React.FC<Props> = ({ 
+const ConfigurationPanel: React.FC<Props> = ({ 
   config, 
   onChange, 
   onGenerate, 
@@ -357,3 +357,5 @@ export const ConfigurationPanel: React.FC<Props> = ({
     </div>
   );
 };
+
+export default ConfigurationPanel;

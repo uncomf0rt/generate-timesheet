@@ -2,7 +2,7 @@ import { Config, DayRecord } from './types';
 import { getAdoRepos, getAdoCommits, getJiraTasks, getHolidays } from './api';
 import { eachDayOfInterval, isWeekend as isDateWeekend, format, isSameDay, parseISO, startOfDay, endOfDay } from 'date-fns';
 
-export async function generateTimesheetData(config: Config): Promise<DayRecord[]> {
+export async function generateTimesheetData(config: Config): Promise<{ records: DayRecord[], jiraTokenExpired: boolean }> {
   const startDate = startOfDay(parseISO(config.startDate));
   const endDate = endOfDay(parseISO(config.endDate));
   
