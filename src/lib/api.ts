@@ -1,9 +1,9 @@
 import axios from 'axios';
-import { Config, OAuthToken, ADOProject } from './types';
+import { ADOProject, Config, OAuthToken } from './types';
 
 // Helper to create Basic Auth token from PAT
 const createBasicAuth = (pat: string) => {
-  return 'Basic ' + Buffer.from(`:${pat}`).toString('base64');
+  return `Basic ${Buffer.from(`:${pat}`).toString('base64')}`;
 };
 
 // Jira OAuth endpoints
@@ -24,26 +24,30 @@ export const refreshJiraToken = async (refreshToken: string) => {
 
 // Azure DevOps API (using PAT)
 export const getAdoProjects = async (pat: string, org: string) => {
-  const { data } = await axios.get('/api/ado/projects', {
+  const { data } = (await axios.get('/api/ado/projects', {
     headers: {
       Authorization: createBasicAuth(pat),
     },
     params: { org },
-  }) as any;
+  })) as any;
   return data.projects as ADOProject[];
 };
 
 export const getAdoRepos = async (config: Config) => {
-  const { data: { repositories } } = await axios.post('/api/ado/repos', {
+  const {
+    data: { repositories },
+  } = (await axios.post('/api/ado/repos', {
     organization: config.adoOrg,
     project: config.adoProject,
-    pat: config.azurePat
-  }) as any;
+    pat: config.azurePat,
+  })) as any;
   return repositories;
 };
 
 export const getAdoCommits = async (config: Omit<Config, 'jiraToken'> & { repoId: string }) => {
-  const { data: { commits } } = await axios.post('/api/ado/commits', {
+  const {
+    data: { commits },
+  } = (await axios.post('/api/ado/commits', {
     organization: config.adoOrg,
     project: config.adoProject,
     repoId: config.repoId,
@@ -51,9 +55,9 @@ export const getAdoCommits = async (config: Omit<Config, 'jiraToken'> & { repoId
     searchCriteria: {
       author: config.adoEmail,
       fromDate: config.startDate,
-      toDate: config.endDate
-    }
-  }) as any;
+      toDate: config.endDate,
+    },
+  })) as any;
   return commits;
 };
 
@@ -62,13 +66,13 @@ export const getJiraTasks = async (config: Config) => {
   if (!config.jiraToken?.access_token) {
     return [];
   }
-  
+
   const jql = `assignee = currentUser() AND updated >= ${config.startDate} AND updated <= ${config.endDate}`;
-  
+
   try {
     const { data } = await axios.post('/api/jira/search', {
       token: config.jiraToken.access_token,
-      jql
+      jql,
     });
     return data.issues;
   } catch (error: any) {
@@ -76,22 +80,21 @@ export const getJiraTasks = async (config: Config) => {
     if (error.response?.status === 401) {
       throw new Error('JIRA_TOKEN_EXPIRED');
     }
-    console.error("Failed to fetch Jira tasks", error);
+    console.error('Failed to fetch Jira tasks', error);
     return [];
   }
 };
 
 export const getHolidays = async (year: number, month: number) => {
   try {
-
     const { data } = await axios.get(`/api/holidays`, {
       params: {
         year,
-        month: month + 1
-      }
+        month: month + 1,
+      },
     });
     return data;
-  } catch (error) {
+  } catch (_error) {
     return [];
   }
 };

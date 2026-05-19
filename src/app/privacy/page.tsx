@@ -1,6 +1,5 @@
-import React from 'react';
+import { Database, Lock, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
-import { ShieldCheck, Database, Lock, Users, Trash2 } from 'lucide-react';
 
 export default function PrivacyPage() {
   return (
@@ -8,7 +7,10 @@ export default function PrivacyPage() {
       <div className="max-w-3xl mx-auto space-y-12 pt-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <Link href="/" className="inline-block text-xs uppercase tracking-widest text-[#9A958A] font-semibold hover:text-[#A4B494] transition-colors">
+          <Link
+            href="/"
+            className="inline-block text-xs uppercase tracking-widest text-[#9A958A] font-semibold hover:text-[#A4B494] transition-colors"
+          >
             &larr; Back to App
           </Link>
           <h1 className="text-4xl font-serif italic text-[#3E3D39] tracking-tight sm:text-5xl">
@@ -31,10 +33,14 @@ export default function PrivacyPage() {
             </div>
             <div className="text-sm text-[#5A6355] leading-relaxed space-y-4">
               <p>
-                Auto Timesheet Generator (&ldquo;the App&rdquo;) is a client-side web application that helps you generate timesheets from your Azure DevOps commits and Jira issues. This Privacy Policy explains how the App handles your data.
+                Auto Timesheet Generator (&ldquo;the App&rdquo;) is a client-side web application
+                that helps you generate timesheets from your Azure DevOps commits and Jira issues.
+                This Privacy Policy explains how the App handles your data.
               </p>
               <p>
-                The App is designed with privacy as a core principle: <strong>all data stays on your device</strong>. We do not collect, store, or transmit your personal or credential data to any external server.
+                The App is designed with privacy as a core principle:{' '}
+                <strong>all data stays on your device</strong>. We do not collect, store, or
+                transmit your personal or credential data to any external server.
               </p>
             </div>
           </section>
@@ -50,10 +56,22 @@ export default function PrivacyPage() {
             <div className="text-sm text-[#5A6355] leading-relaxed space-y-4">
               <p>The App may collect and store the following data locally in your browser:</p>
               <ul className="list-disc pl-5 space-y-2">
-                <li><strong>Azure DevOps Personal Access Token (PAT)</strong> &ndash; Used to authenticate with Azure DevOps API to fetch your commit data.</li>
-                <li><strong>Jira OAuth Token</strong> &ndash; Used to authenticate with Jira API to fetch your assigned issues (optional).</li>
-                <li><strong>Configuration Data</strong> &ndash; Azure DevOps organization, project, email, and date range preferences.</li>
-                <li><strong>Timesheet Data</strong> &ndash; Generated timesheet records that you create.</li>
+                <li>
+                  <strong>Azure DevOps Personal Access Token (PAT)</strong> &ndash; Used to
+                  authenticate with Azure DevOps API to fetch your commit data.
+                </li>
+                <li>
+                  <strong>Jira OAuth Token</strong> &ndash; Used to authenticate with Jira API to
+                  fetch your assigned issues (optional).
+                </li>
+                <li>
+                  <strong>Configuration Data</strong> &ndash; Azure DevOps organization, project,
+                  email, and date range preferences.
+                </li>
+                <li>
+                  <strong>Timesheet Data</strong> &ndash; Generated timesheet records that you
+                  create.
+                </li>
               </ul>
               <p>No personal information (name, phone, address, etc.) is collected by this App.</p>
             </div>
@@ -68,13 +86,20 @@ export default function PrivacyPage() {
               <h2 className="text-xl font-serif italic text-[#3E3D39]">How We Use Data</h2>
             </div>
             <div className="text-sm text-[#5A6355] leading-relaxed space-y-4">
-              <p>Your data is used <strong>only</strong> for the following purposes:</p>
+              <p>
+                Your data is used <strong>only</strong> for the following purposes:
+              </p>
               <ul className="list-disc pl-5 space-y-2">
                 <li>Authenticating with Azure DevOps API to retrieve your commit history</li>
-                <li>Authenticating with Jira API to retrieve your assigned issues (if connected)</li>
+                <li>
+                  Authenticating with Jira API to retrieve your assigned issues (if connected)
+                </li>
                 <li>Generating timesheet reports based on your activity data</li>
               </ul>
-              <p>Your credentials and data are <strong>never</strong> sent to any third-party server or analytics service.</p>
+              <p>
+                Your credentials and data are <strong>never</strong> sent to any third-party server
+                or analytics service.
+              </p>
             </div>
           </section>
 
@@ -87,7 +112,10 @@ export default function PrivacyPage() {
               <h2 className="text-xl font-serif italic text-[#3E3D39]">Data Storage</h2>
             </div>
             <div className="text-sm text-[#5A6355] leading-relaxed space-y-4">
-              <p>All data is stored exclusively in your browser&apos;s <strong>localStorage</strong>. This means:</p>
+              <p>
+                All data is stored exclusively in your browser&apos;s <strong>localStorage</strong>.
+                This means:
+              </p>
               <ul className="list-disc pl-5 space-y-2">
                 <li>Data resides on your local device only</li>
                 <li>Data is not synchronized across devices</li>
@@ -108,10 +136,20 @@ export default function PrivacyPage() {
             <div className="text-sm text-[#5A6355] leading-relaxed space-y-4">
               <p>The App interacts with these third-party APIs:</p>
               <ul className="list-disc pl-5 space-y-2">
-                <li><strong>Azure DevOps API</strong> (dev.azure.com) &ndash; Used to fetch your commits and generate timesheet data</li>
-                <li><strong>Jira API</strong> (atlassian.net) &ndash; Used to fetch your assigned issues for timesheet generation</li>
+                <li>
+                  <strong>Azure DevOps API</strong> (dev.azure.com) &ndash; Used to fetch your
+                  commits and generate timesheet data
+                </li>
+                <li>
+                  <strong>Jira API</strong> (atlassian.net) &ndash; Used to fetch your assigned
+                  issues for timesheet generation
+                </li>
               </ul>
-              <p>When you use these services, your data is exchanged directly between your browser and the respective third-party API. The App acts solely as an intermediary and does not store or process this data on any server.</p>
+              <p>
+                When you use these services, your data is exchanged directly between your browser
+                and the respective third-party API. The App acts solely as an intermediary and does
+                not store or process this data on any server.
+              </p>
             </div>
           </section>
 
@@ -127,7 +165,10 @@ export default function PrivacyPage() {
               <p>You have full control over your data:</p>
               <ul className="list-disc pl-5 space-y-2">
                 <li>All data is stored locally in your browser&apos;s localStorage</li>
-                <li>You can delete all stored data at any time using the &ldquo;Delete Data&rdquo; button in the app</li>
+                <li>
+                  You can delete all stored data at any time using the &ldquo;Delete Data&rdquo;
+                  button in the app
+                </li>
                 <li>You can also clear data via your browser&apos;s developer tools or settings</li>
                 <li>No data is encrypted server-side since it never leaves your device</li>
               </ul>
@@ -153,7 +194,8 @@ export default function PrivacyPage() {
             </div>
             <div className="text-sm text-[#5A6355] leading-relaxed space-y-4">
               <p>
-                If you have any questions about this Privacy Policy or how the App handles your data, please reach out via the GitHub repository.
+                If you have any questions about this Privacy Policy or how the App handles your
+                data, please reach out via the GitHub repository.
               </p>
               <a
                 href="https://github.com/your-repo/timesheet-generator/issues"

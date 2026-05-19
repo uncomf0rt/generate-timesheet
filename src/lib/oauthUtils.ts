@@ -1,5 +1,5 @@
-import { OAuthToken } from './types';
 import * as api from './api';
+import { OAuthToken } from './types';
 
 const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes before actual expiry
 
@@ -7,7 +7,7 @@ const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes before actual expiry
  * Check if a token is expired or about to expire
  */
 export function isTokenExpired(token?: OAuthToken): boolean {
-  if (!token || !token.expires_in) return true;
+  if (!token?.expires_in) return true;
   return Date.now() > token.expires_in - TOKEN_EXPIRY_BUFFER;
 }
 
@@ -16,7 +16,7 @@ export function isTokenExpired(token?: OAuthToken): boolean {
  */
 // export async function ensureAzureTokenValid(token?: OAuthToken): Promise<OAuthToken | null> {
 //   if (!token) return null;
-  
+
 //   if (isTokenExpired(token)) {
 //     if (!token.refreshToken) return null;
 //     try {
@@ -26,7 +26,7 @@ export function isTokenExpired(token?: OAuthToken): boolean {
 //       return null;
 //     }
 //   }
-  
+
 //   return token;
 // }
 
@@ -35,7 +35,7 @@ export function isTokenExpired(token?: OAuthToken): boolean {
  */
 export async function ensureJiraTokenValid(token?: OAuthToken): Promise<OAuthToken | null> {
   if (!token) return null;
-  
+
   if (isTokenExpired(token)) {
     if (!token.refresh_token) return null;
     try {
@@ -45,7 +45,7 @@ export async function ensureJiraTokenValid(token?: OAuthToken): Promise<OAuthTok
       return null;
     }
   }
-  
+
   return token;
 }
 
@@ -74,10 +74,10 @@ export function storeTokens(azureToken?: OAuthToken, jiraToken?: OAuthToken): vo
 export function retrieveTokens(): { azureToken?: OAuthToken; jiraToken?: OAuthToken } {
   const azureTokenStr = localStorage.getItem('azure_token');
   const jiraTokenStr = localStorage.getItem('jira_token');
-  
+
   return {
     azureToken: azureTokenStr ? JSON.parse(azureTokenStr) : undefined,
-    jiraToken: jiraTokenStr ? JSON.parse(jiraTokenStr) : undefined
+    jiraToken: jiraTokenStr ? JSON.parse(jiraTokenStr) : undefined,
   };
 }
 

@@ -1,7 +1,17 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Config, OAuthToken, ADOProject } from '../lib/types';
-import { Settings2, Link2, Calendar, LogIn, CheckCircle, LogOut, ChevronDown, Check, Loader2, AlertTriangle } from 'lucide-react';
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle,
+  ChevronDown,
+  Link2,
+  Loader2,
+  LogIn,
+  LogOut,
+  Settings2,
+} from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from '@/lib/api';
+import { ADOProject, Config, OAuthToken } from '../lib/types';
 
 interface Props {
   config: Config;
@@ -16,30 +26,70 @@ interface Props {
 
 type JiraStatus = 'checking' | 'valid' | 'invalid' | 'disconnected';
 
-const ConfigurationPanel: React.FC<Props> = ({ 
-  config, 
-  onChange, 
-  onGenerate, 
+const ConfigurationPanel: React.FC<Props> = ({
+  config,
+  onChange,
+  onGenerate,
   loading,
   jiraToken,
   onJiraLogin,
   onJiraLogout,
-  jiraLoginLoading = false
+  jiraLoginLoading = false,
 }) => {
-  // ADO state
+  // ============================================================================
+  // STATE HOOKS - ADO
+  // ============================================================================
   const [projects, setProjects] = useState<ADOProject[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<string[]>(
-    config.adoProject ? config.adoProject.split(',').map(p => p.trim()).filter(Boolean) : []
+    config.adoProject
+      ? config.adoProject
+          .split(',')
+          .map((p) => p.trim())
+          .filter(Boolean)
+      : []
   );
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [projectsError, setProjectsError] = useState<string | null>(null);
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
-  const projectDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Jira status state
+  // ============================================================================
+  // STATE HOOKS - Jira
+  // ============================================================================
   const [jiraStatus, setJiraStatus] = useState<JiraStatus>('disconnected');
 
-  // Check Jira token health on mount and when token changes
+  // ============================================================================
+  // REF HOOKS
+  // ============================================================================
+  const projectDropdownRef = useRef<HTMLDivElement>(null);
+
+  // ============================================================================
+  // CALLBACK HOOKS - Defined BEFORE effects that use them
+  // ============================================================================
+
+  const fetchProjects = useCallback(async (org: string, pat: string) => {
+    if (!org || !pat) {
+      setProjects([]);
+      return;
+    }
+    setLoadingProjects(true);
+    setProjectsError(null);
+    try {
+      const projList = await api.getAdoProjects(pat, org);
+      setProjects(projList);
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || err.message || 'Failed to fetch projects';
+      setProjectsError(errorMsg);
+      setProjects([]);
+    } finally {
+      setLoadingProjects(false);
+    }
+  }, []);
+
+  // ============================================================================
+  // EFFECT HOOKS - Grouped by purpose
+  // ============================================================================
+
+  // Effect: Check Jira token health on mount and when token changes
   useEffect(() => {
     const checkJiraHealth = async () => {
       if (!jiraToken?.access_token) {
@@ -64,10 +114,13 @@ const ConfigurationPanel: React.FC<Props> = ({
     checkJiraHealth();
   }, [jiraToken]);
 
-  // Close dropdown on outside click
+  // Effect: Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (projectDropdownRef.current && !projectDropdownRef.current.contains(event.target as Node)) {
+      if (
+        projectDropdownRef.current &&
+        !projectDropdownRef.current.contains(event.target as Node)
+      ) {
         setProjectDropdownOpen(false);
       }
     };
@@ -75,7 +128,7 @@ const ConfigurationPanel: React.FC<Props> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Auto-fetch projects when org or PAT changes (including on mount)
+  // Effect: Auto-fetch projects when org or PAT changes (including on mount)
   useEffect(() => {
     if (config.adoOrg && config.azurePat) {
       fetchProjects(config.adoOrg, config.azurePat);
@@ -83,29 +136,12 @@ const ConfigurationPanel: React.FC<Props> = ({
       setProjects([]);
       setSelectedProjects([]);
     }
-  }, [config.adoOrg, config.azurePat]);
+  }, [config.adoOrg, config.azurePat, fetchProjects]);
 
-  // Fetch projects when org or PAT changes
-  const fetchProjects = useCallback(async (org: string, pat: string) => {
-    if (!org || !pat) {
-      setProjects([]);
-      return;
-    }
-    setLoadingProjects(true);
-    setProjectsError(null);
-    try {
-      const projList = await api.getAdoProjects(pat, org);
-      setProjects(projList);
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.error || err.message || 'Failed to fetch projects';
-      setProjectsError(errorMsg);
-      setProjects([]);
-    } finally {
-      setLoadingProjects(false);
-    }
-  }, []);
+  // ============================================================================
+  // HANDLERS - Event handlers defined after hooks
+  // ============================================================================
 
-  // Handle PAT change
   const handlePatChange = (value: string) => {
     onChange('azurePat', value);
     if (!value) {
@@ -115,17 +151,15 @@ const ConfigurationPanel: React.FC<Props> = ({
     }
   };
 
-  // Handle org change
   const handleOrgChange = (value: string) => {
     onChange('adoOrg', value);
     onChange('adoProject', '');
     setSelectedProjects([]);
   };
 
-  // Handle project toggle (multiselect)
   const handleProjectToggle = (projectName: string) => {
     const newSelected = selectedProjects.includes(projectName)
-      ? selectedProjects.filter(p => p !== projectName)
+      ? selectedProjects.filter((p) => p !== projectName)
       : [...selectedProjects, projectName];
     setSelectedProjects(newSelected);
     onChange('adoProject', newSelected.join(','));
@@ -133,7 +167,6 @@ const ConfigurationPanel: React.FC<Props> = ({
 
   return (
     <div className="bg-white rounded-[40px] border border-[#E5E2D9] shadow-sm p-8 md:p-10 space-y-10">
-      
       {/* Date Range Selection */}
       <div>
         <h3 className="flex items-center text-sm uppercase tracking-widest font-bold text-[#8E897E] mb-6 pb-4 border-b border-[#E5E2D9]">
@@ -142,8 +175,14 @@ const ConfigurationPanel: React.FC<Props> = ({
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider">Tanggal Mulai</label>
+            <label
+              htmlFor="startDate"
+              className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
+            >
+              Tanggal Mulai
+            </label>
             <input
+              id="startDate"
               type="date"
               title="Pilih Tanggal Mulai"
               value={config.startDate}
@@ -152,8 +191,14 @@ const ConfigurationPanel: React.FC<Props> = ({
             />
           </div>
           <div>
-            <label className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider">Tanggal Selesai</label>
+            <label
+              htmlFor="endDate"
+              className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
+            >
+              Tanggal Selesai
+            </label>
             <input
+              id="endDate"
               type="date"
               title="Pilih Tanggal Selesai"
               value={config.endDate}
@@ -172,10 +217,16 @@ const ConfigurationPanel: React.FC<Props> = ({
             Azure DevOps (Utama)
           </h3>
           <div className="space-y-5">
-            {/* 1. PAT Field */}
+            {/* PAT Field */}
             <div>
-              <label className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider">Personal Access Token (PAT)</label>
+              <label
+                htmlFor="azurePat"
+                className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
+              >
+                Personal Access Token (PAT)
+              </label>
               <input
+                id="azurePat"
                 type="password"
                 value={config.azurePat}
                 onChange={(e) => handlePatChange(e.target.value)}
@@ -184,35 +235,53 @@ const ConfigurationPanel: React.FC<Props> = ({
               />
             </div>
 
-            {/* 2. Committer Field */}
+            {/* Committer Field */}
             <div>
-              <label className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider">Email Committer</label>
+              <label
+                htmlFor="adoEmail"
+                className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
+              >
+                Email Committer
+              </label>
               <input
+                id="adoEmail"
                 type="email"
                 value={config.adoEmail}
-                onChange={e => onChange('adoEmail', e.target.value)}
+                onChange={(e) => onChange('adoEmail', e.target.value)}
                 placeholder="email@company.com"
                 className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
               />
             </div>
 
-            {/* 3. Organization - Text Input */}
+            {/* Organization - Text Input */}
             <div>
-              <label className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider">Organization</label>
+              <label
+                htmlFor="adoOrg"
+                className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
+              >
+                Organization
+              </label>
               <input
+                id="adoOrg"
                 type="text"
                 value={config.adoOrg}
-                onChange={e => handleOrgChange(e.target.value)}
+                onChange={(e) => handleOrgChange(e.target.value)}
                 placeholder="mycompany"
                 className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
               />
             </div>
 
-            {/* 4. Project Dropdown (Multiselect) */}
+            {/* Project Dropdown (Multiselect) */}
             <div ref={projectDropdownRef}>
-              <label className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider">Projects</label>
+              <label
+                htmlFor="projectsDropdown"
+                className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
+              >
+                Projects
+              </label>
               <div className="relative">
                 <button
+                  id="projectsDropdown"
                   type="button"
                   onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
                   disabled={!config.adoOrg || !config.azurePat || loadingProjects}
@@ -224,12 +293,16 @@ const ConfigurationPanel: React.FC<Props> = ({
                         <Loader2 className="w-4 h-4 animate-spin" />
                         Loading projects...
                       </span>
-                    ) : selectedProjects.length > 0 
-                      ? `${selectedProjects.length} project(s) selected`
-                      : 'Select projects'}
+                    ) : selectedProjects.length > 0 ? (
+                      `${selectedProjects.length} project(s) selected`
+                    ) : (
+                      'Select projects'
+                    )}
                   </span>
                   {config.adoOrg && config.azurePat && (
-                    <ChevronDown className={`w-4 h-4 text-[#9A958A] transition-transform ${projectDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`w-4 h-4 text-[#9A958A] transition-transform ${projectDropdownOpen ? 'rotate-180' : ''}`}
+                    />
                   )}
                 </button>
 
@@ -243,9 +316,7 @@ const ConfigurationPanel: React.FC<Props> = ({
                     {projects.map((project) => (
                       <label
                         key={project.id}
-                        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#F8F7F3] ${
-                          selectedProjects.includes(project.name) ? 'bg-[#F8F7F3]' : ''
-                        }`}
+                        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#F8F7F3] ${selectedProjects.includes(project.name) ? 'bg-[#F8F7F3]' : ''}`}
                       >
                         <input
                           type="checkbox"
@@ -296,7 +367,9 @@ const ConfigurationPanel: React.FC<Props> = ({
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-amber-600" />
-                  <span className="text-sm font-semibold text-amber-700">Jira needs re-authentication</span>
+                  <span className="text-sm font-semibold text-amber-700">
+                    Jira needs re-authentication
+                  </span>
                 </div>
                 <button
                   onClick={onJiraLogin}
@@ -316,9 +389,26 @@ const ConfigurationPanel: React.FC<Props> = ({
               >
                 {jiraLoginLoading ? (
                   <>
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      aria-label="Loading"
+                      className="animate-spin h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
                     Connecting...
                   </>
@@ -342,9 +432,26 @@ const ConfigurationPanel: React.FC<Props> = ({
         >
           {loading ? (
             <>
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#F8F7F3]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                aria-label="Loading"
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#F8F7F3]"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
               </svg>
               Memproses Data...
             </>
@@ -353,7 +460,7 @@ const ConfigurationPanel: React.FC<Props> = ({
           )}
         </button>
       </div>
-      <div id="preview"></div>
+      <div id="preview" />
     </div>
   );
 };

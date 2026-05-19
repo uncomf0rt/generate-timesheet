@@ -1,6 +1,6 @@
-import React from 'react';
+import { ExternalLink, HelpCircle, Key, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { HelpCircle, ExternalLink, ShieldCheck, Key } from 'lucide-react';
+import React from 'react';
 
 export const HelpPanel: React.FC = () => {
   return (
@@ -24,33 +24,61 @@ export const HelpPanel: React.FC = () => {
             </div>
             <h3 className="text-xl font-serif italic text-[#3E3D39]">Azure DevOps PAT</h3>
           </div>
-          
+
           <div className="space-y-4 text-sm text-[#5A6355] leading-relaxed">
-            <p>Gunakan Personal Access Token (PAT) untuk memberikan akses aman ke Azure DevOps tanpa menyimpan password Anda.</p>
-            
+            <p>
+              Gunakan Personal Access Token (PAT) untuk memberikan akses aman ke Azure DevOps tanpa
+              menyimpan password Anda.
+            </p>
+
             <div className="bg-[#E7F5E4] border border-[#5A6355]/20 rounded-2xl p-4">
               <p className="font-semibold text-[#5A6355] mb-3">Cara Membuat PAT:</p>
               <ol className="list-decimal pl-5 space-y-2 text-xs marker:font-bold">
-                <li>Buka <span className="font-bold">Azure DevOps</span> di <a href="https://dev.azure.com/" target="_blank" className="text-[#A4B494] hover:underline">dev.azure.com</a></li>
+                <li>
+                  Buka <span className="font-bold">Azure DevOps</span> di{' '}
+                  <a
+                    href="https://dev.azure.com/"
+                    target="_blank"
+                    className="text-[#A4B494] hover:underline"
+                    rel="noopener"
+                  >
+                    dev.azure.com
+                  </a>
+                </li>
                 <li>Klik foto profil Anda di kanan atas</li>
-                <li>Pilih <span className="font-bold">Personal access tokens</span></li>
-                <li>Klik <span className="font-bold">+ New Token</span></li>
+                <li>
+                  Pilih <span className="font-bold">Personal access tokens</span>
+                </li>
+                <li>
+                  Klik <span className="font-bold">+ New Token</span>
+                </li>
                 <li>Isi nama token (misal: "Timesheet Generator")</li>
-                <li>Pilih <span className="font-bold">Organization: All accessible organizations</span></li>
-                <li>Di bawah <span className="font-bold">Scopes</span>, pilih <span className="font-bold">Read &amp; execute</span> untuk Code</li>
-                <li>Klik <span className="font-bold">Create</span> dan copy token yang dihasilkan</li>
+                <li>
+                  Pilih{' '}
+                  <span className="font-bold">Organization: All accessible organizations</span>
+                </li>
+                <li>
+                  Di bawah <span className="font-bold">Scopes</span>, pilih{' '}
+                  <span className="font-bold">Read &amp; execute</span> untuk Code
+                </li>
+                <li>
+                  Klik <span className="font-bold">Create</span> dan copy token yang dihasilkan
+                </li>
                 <li>Paste token ke kolom PAT di Configuration Panel</li>
               </ol>
             </div>
-            
+
             <p className="text-xs text-[#B8865D] bg-[#E7AB79]/10 p-3 rounded-lg border border-[#E7AB79]/20">
-              <span className="font-semibold">⚠️ Penting:</span> Jangan bagikan PAT Anda kepada orang lain. Disarankan untuk membuat PAT baru setiap kali diperlukan, atau atur expiration date agar otomatis hangus.
+              <span className="font-semibold">⚠️ Penting:</span> Jangan bagikan PAT Anda kepada orang
+              lain. Disarankan untuk membuat PAT baru setiap kali diperlukan, atau atur expiration
+              date agar otomatis hangus.
             </p>
-            
-            <a 
-              href="https://dev.azure.com/" 
-              target="_blank" 
+
+            <a
+              href="https://dev.azure.com/"
+              target="_blank"
               className="inline-flex items-center text-[#A4B494] font-bold hover:underline gap-1 text-xs uppercase"
+              rel="noopener"
             >
               Buka Azure DevOps <ExternalLink className="w-3 h-3" />
             </a>
@@ -68,11 +96,14 @@ export const HelpPanel: React.FC = () => {
 
           <div className="space-y-4 text-sm text-[#5A6355] leading-relaxed">
             <p>Hubungkan Jira Cloud untuk mendapatkan data task yang ditugaskan kepada Anda.</p>
-            
+
             <div className="bg-[#E7F5E4] border border-[#5A6355]/20 rounded-2xl p-4">
               <p className="font-semibold text-[#5A6355] mb-2">Cara Menggunakan:</p>
               <ol className="list-decimal pl-5 space-y-2 text-xs marker:font-bold">
-                <li>Klik tombol <span className="font-bold">"Sign in with Jira"</span> di Configuration Panel</li>
+                <li>
+                  Klik tombol <span className="font-bold">"Sign in with Jira"</span> di
+                  Configuration Panel
+                </li>
                 <li>Anda akan diarahkan ke Atlassian Login</li>
                 <li>Masuk dengan akun Atlassian Anda</li>
                 <li>Setujui permintaan akses ke Jira</li>
@@ -81,17 +112,22 @@ export const HelpPanel: React.FC = () => {
             </div>
 
             <div className="bg-[#FFF4E6] border border-[#E7AB79]/30 rounded-2xl p-4">
-              <p className="text-xs text-[#5A6355] mb-2"><span className="font-semibold">Persyaratan:</span></p>
+              <p className="text-xs text-[#5A6355] mb-2">
+                <span className="font-semibold">Persyaratan:</span>
+              </p>
               <ul className="list-disc pl-5 space-y-1 text-xs text-[#5A6355]">
                 <li>Pastikan domain Jira Anda benar (misal: company.atlassian.net)</li>
-                <li>Koneksi Jira bersifat opsional - Anda tetap bisa membuat timesheet tanpa Jira</li>
+                <li>
+                  Koneksi Jira bersifat opsional - Anda tetap bisa membuat timesheet tanpa Jira
+                </li>
               </ul>
             </div>
-            
-            <a 
-              href="https://www.atlassian.com/software/jira" 
-              target="_blank" 
+
+            <a
+              href="https://www.atlassian.com/software/jira"
+              target="_blank"
               className="inline-flex items-center text-[#A4B494] font-bold hover:underline gap-1 text-xs uppercase"
+              rel="noopener"
             >
               Pelajari Jira Cloud <ExternalLink className="w-3 h-3" />
             </a>
@@ -109,11 +145,15 @@ export const HelpPanel: React.FC = () => {
           </div>
           <div className="bg-[#F8F7F3] rounded-2xl p-4">
             <p className="font-semibold mb-2">✓ Terkontrol</p>
-            <p className="text-xs">Anda dapat memutuskan koneksi kapan saja dengan klik "Disconnect".</p>
+            <p className="text-xs">
+              Anda dapat memutuskan koneksi kapan saja dengan klik "Disconnect".
+            </p>
           </div>
           <div className="bg-[#F8F7F3] rounded-2xl p-4">
             <p className="font-semibold mb-2">✓ Minimal Access</p>
-            <p className="text-xs">Aplikasi hanya meminta izin yang diperlukan untuk membaca data.</p>
+            <p className="text-xs">
+              Aplikasi hanya meminta izin yang diperlukan untuk membaca data.
+            </p>
           </div>
         </div>
         <div className="mt-6 text-center">
