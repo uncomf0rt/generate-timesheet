@@ -30,7 +30,7 @@ export interface DayRecord {
   commits: string[];
   tasks: string[];
   editableActivity?: string;
-  status: "Hari kerja" | "Libur";
+  status: 'Hari kerja' | 'Libur';
 }
 
 export interface ADOProject {

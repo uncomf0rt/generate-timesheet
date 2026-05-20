@@ -1,7 +1,7 @@
-import React from 'react';
-import { DayRecord } from '../lib/types';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import React from 'react';
+import { DayRecord } from '../lib/types';
 
 interface Props {
   records: DayRecord[];
@@ -19,29 +19,47 @@ export const ResultTable: React.FC<Props> = ({ records, onUpdateRecord }) => {
             <table className="min-w-full divide-y divide-[#E5E2D9]">
               <thead className="bg-[#EAE7DF]">
                 <tr>
-                  <th scope="col" className="py-4 pl-6 pr-3 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-32">
+                  <th
+                    scope="col"
+                    className="py-4 pl-6 pr-3 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-32"
+                  >
                     Tanggal
                   </th>
-                  <th scope="col" className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-32">
+                  <th
+                    scope="col"
+                    className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-32"
+                  >
                     Hari
                   </th>
-                  <th scope="col" className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-32">
+                  <th
+                    scope="col"
+                    className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-32"
+                  >
                     Status
                   </th>
-                  <th scope="col" className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E]">
+                  <th
+                    scope="col"
+                    className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E]"
+                  >
                     Aktivitas
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E5E2D9] bg-white text-[#3C3A36]">
-                {records.map((record, idx) => {
+                {records.map((record) => {
                   const isDayOff = record.status === 'Libur';
                   const dateStr = format(record.date, 'dd MMM yyyy', { locale: id });
                   const dayName = format(record.date, 'EEEE', { locale: id });
                   const activities = [...record.tasks, ...record.commits];
-                  
+                  const rowKey = record.date.toISOString();
+
                   return (
-                    <tr key={idx} className={isDayOff ? 'bg-[#F8F7F3]' : 'hover:bg-[#F8F7F3]/50 transition-colors'}>
+                    <tr
+                      key={rowKey}
+                      className={
+                        isDayOff ? 'bg-[#F8F7F3]' : 'hover:bg-[#F8F7F3]/50 transition-colors'
+                      }
+                    >
                       <td className="whitespace-nowrap py-5 pl-6 pr-3 text-sm font-medium text-[#3E3D39]">
                         {dateStr}
                       </td>
@@ -51,24 +69,52 @@ export const ResultTable: React.FC<Props> = ({ records, onUpdateRecord }) => {
                       <td className="whitespace-nowrap px-3 py-5 text-sm">
                         <select
                           value={record.status}
-                          onChange={(e) => onUpdateRecord(idx, 'status', e.target.value)}
+                          onChange={(e) =>
+                            onUpdateRecord(records.indexOf(record), 'status', e.target.value)
+                          }
                           className={`block w-full rounded-xl border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset outline-none focus:ring-2 focus:ring-inset text-xs font-bold sm:leading-6 ${
-                            isDayOff ? 'bg-[#EAE7DF] text-[#8E897E] ring-[#D9D5CB] focus:ring-[#8E897E]' : 'bg-[#F8F7F3] text-[#5A6355] ring-[#A4B494]/30 focus:ring-[#A4B494]'
+                            isDayOff
+                              ? 'bg-[#EAE7DF] text-[#8E897E] ring-[#D9D5CB] focus:ring-[#8E897E]'
+                              : 'bg-[#F8F7F3] text-[#5A6355] ring-[#A4B494]/30 focus:ring-[#A4B494]'
                           }`}
                         >
                           <option value="Hari kerja">Hari Kerja</option>
                           <option value="Libur">
-                            {record.isHoliday ? record.holidayName : record.isWeekend ? 'Libur Akhir Pekan' : 'Libur'}
+                            {record.isHoliday
+                              ? record.holidayName
+                              : record.isWeekend
+                                ? 'Libur Akhir Pekan'
+                                : 'Libur'}
                           </option>
                         </select>
                       </td>
                       <td className="px-3 py-5 text-sm text-[#5A6355]">
                         <textarea
                           className="w-full resize-y bg-transparent border border-[#E5E2D9] rounded-xl focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 p-3 text-sm outline-none transition-shadow"
-                          value={record.editableActivity !== undefined ? record.editableActivity : activities.join('\n')}
-                          onChange={(e) => onUpdateRecord(idx, 'editableActivity', e.target.value)}
-                          rows={Math.max(2, (record.editableActivity !== undefined ? record.editableActivity : activities.join('\n')).split('\n').length)}
-                          placeholder={isDayOff ? "Tidak ada aktivitas" : "- Tidak ada commit atau task tercatat -"}
+                          value={
+                            record.editableActivity !== undefined
+                              ? record.editableActivity
+                              : activities.join('\n')
+                          }
+                          onChange={(e) =>
+                            onUpdateRecord(
+                              records.indexOf(record),
+                              'editableActivity',
+                              e.target.value
+                            )
+                          }
+                          rows={Math.max(
+                            2,
+                            (record.editableActivity !== undefined
+                              ? record.editableActivity
+                              : activities.join('\n')
+                            ).split('\n').length
+                          )}
+                          placeholder={
+                            isDayOff
+                              ? 'Tidak ada aktivitas'
+                              : '- Tidak ada commit atau task tercatat -'
+                          }
                         />
                       </td>
                     </tr>

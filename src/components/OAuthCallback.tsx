@@ -1,16 +1,16 @@
-import React, { useEffect, useState, useRef } from "react";
-import * as api from "../lib/api";
-import { storeTokens } from "../lib/oauthUtils";
-import { Loader } from "lucide-react";
+import { Loader } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import * as api from '../lib/api';
+import { storeTokens } from '../lib/oauthUtils';
 
 /**
  * OAuth Callback Handler Component
  * This component is called from App.tsx when OAuth callback parameters are detected
  */
 export const OAuthCallback: React.FC<{
-  service: "jira";
+  service: 'jira';
   state: string;
-  onSuccess: (tokenType: "azure" | "jira") => void;
+  onSuccess: (tokenType: 'azure' | 'jira') => void;
   onError: (error: string) => void;
 }> = ({ service, state, onSuccess, onError }) => {
   const [loading, setLoading] = useState(true);
@@ -27,15 +27,15 @@ export const OAuthCallback: React.FC<{
         storeTokens(undefined, token);
 
         setLoading(false);
-        onSuccess(service)
+        onSuccess(service);
       } catch (err: any) {
-        onError(err.message || "Failed to authenticate");
+        onError(err.message || 'Failed to authenticate');
         setLoading(false);
       }
     };
 
     handleCallback();
-  }, [state, service]);
+  }, [state, service, onSuccess, onError]);
 
   if (loading) {
     return (
