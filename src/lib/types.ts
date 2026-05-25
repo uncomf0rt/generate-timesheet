@@ -22,6 +22,8 @@ export interface Config {
   jiraToken?: OAuthToken;
 }
 
+export type KeteranganType = 'Hari kerja' | 'Libur' | 'Sakit' | 'Izin' | 'Cuti';
+
 export interface DayRecord {
   date: Date;
   isWeekend: boolean;
@@ -30,7 +32,21 @@ export interface DayRecord {
   commits: string[];
   tasks: string[];
   editableActivity?: string;
-  status: 'Hari kerja' | 'Libur';
+  status: KeteranganType;
+  jamMulai?: string;
+  jamBerakhir?: string;
+}
+
+export interface EmployeeInfo {
+  nik: string;
+  nama: string;
+  diketahuiOleh: string;
+  disetujuiOleh: string;
+}
+
+export interface SignatureData {
+  imageData: string; // base64 data URL
+  type: 'draw' | 'upload';
 }
 
 export interface ADOProject {

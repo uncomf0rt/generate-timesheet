@@ -130,6 +130,8 @@ export async function generateTimesheetData(
       commits: dayCommits,
       tasks: dayTasks,
       editableActivity: [...dayTasks, ...dayCommits].join('\n'),
+      jamMulai: isDayOff ? '' : '08:00',
+      jamBerakhir: isDayOff ? '' : '17:00',
     };
   });
 

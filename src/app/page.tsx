@@ -1,17 +1,27 @@
 'use client';
 import { format, parseISO, subDays } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { DownloadCloud, FileText, HelpCircle, Trash2, X } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  DownloadCloud,
+  FileText,
+  HelpCircle,
+  Pen,
+  Trash2,
+  X,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { HelpPanel } from '@/components/HelpPanel';
 import { OAuthCallback } from '@/components/OAuthCallback';
 import { ResultTable } from '@/components/ResultTable';
+import { SignatureInput } from '@/components/SignatureInput';
 import * as api from '@/lib/api';
-import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
+import { exportToPDF, generateTemplateExcel } from '@/lib/exportUtils';
 import { generateTimesheetData } from '@/lib/generator';
 import { clearTokens, retrieveTokens } from '@/lib/oauthUtils';
-import { Config, DayRecord, OAuthToken } from '@/lib/types';
+import { Config, DayRecord, EmployeeInfo, OAuthToken, SignatureData } from '@/lib/types';
 
 const ConfigurationPanel = dynamic(() => import('@/components/ConfigurationPanel'), { ssr: false });
 
@@ -57,6 +67,26 @@ export default function App() {
   });
   const [loading, setLoading] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+
+  // Employee info state
+  const [employeeInfo, setEmployeeInfo] = useState<EmployeeInfo>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('timesheet-employee-info');
+      if (saved) return JSON.parse(saved);
+    }
+    return { nik: '', nama: '', diketahuiOleh: '', disetujuiOleh: '' };
+  });
+
+  // Signature data state
+  const [signatureData, setSignatureData] = useState<SignatureData | undefined>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('timesheet-signature');
+      if (saved) return JSON.parse(saved);
+    }
+    return undefined;
+  });
 
   // ============================================================================
   // EFFECT HOOKS - Side effects grouped by purpose
@@ -98,6 +128,18 @@ export default function App() {
     const { startDate, endDate, ...configToSave } = config;
     localStorage.setItem('timesheet-config', JSON.stringify(configToSave));
   }, [config]);
+
+  // Effect: Save employee info to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('timesheet-employee-info', JSON.stringify(employeeInfo));
+  }, [employeeInfo]);
+
+  // Effect: Save signature to localStorage when it changes
+  useEffect(() => {
+    if (signatureData) {
+      localStorage.setItem('timesheet-signature', JSON.stringify(signatureData));
+    }
+  }, [signatureData]);
 
   // Effect: Smooth scroll to results when records are loaded
   useEffect(() => {
@@ -320,7 +362,20 @@ export default function App() {
                   Export PDF
                 </button>
                 <button
-                  onClick={() => exportToExcel(records.records, config.startDate, config.endDate)}
+                  onClick={async () => {
+                    if (!employeeInfo.nik || !employeeInfo.nama) {
+                      alert('Harap lengkapi NIK dan Nama sebelum export.');
+                      setShowEmployeeForm(true);
+                      return;
+                    }
+                    await generateTemplateExcel(
+                      records.records,
+                      config.startDate,
+                      config.endDate,
+                      employeeInfo,
+                      signatureData
+                    );
+                  }}
                   className="px-6 py-2.5 bg-[#5A6355] text-[#F8F7F3] rounded-full text-xs font-bold uppercase tracking-wider shadow-md flex items-center gap-2 hover:bg-[#4A5246] transition-colors"
                 >
                   <DownloadCloud className="w-4 h-4" />
@@ -329,9 +384,145 @@ export default function App() {
               </div>
             </div>
 
+            {/* Employee Info Form */}
+            <div className="border border-[#E5E2D9] rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setShowEmployeeForm(!showEmployeeForm)}
+                className="w-full flex items-center justify-between px-6 py-4 bg-[#EAE7DF] hover:bg-[#E0DDD5] transition-colors"
+              >
+                <span className="text-xs font-bold uppercase tracking-widest text-[#5A6355]">
+                  Informasi Karyawan & Tanda Tangan
+                </span>
+                {showEmployeeForm ? (
+                  <ChevronUp className="w-4 h-4 text-[#5A6355]" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-[#5A6355]" />
+                )}
+              </button>
+              {showEmployeeForm && (
+                <div className="p-6 bg-white space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label
+                        htmlFor="nik-input"
+                        className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
+                      >
+                        NIK
+                      </label>
+                      <input
+                        id="nik-input"
+                        type="text"
+                        value={employeeInfo.nik}
+                        onChange={(e) =>
+                          setEmployeeInfo((prev) => ({ ...prev, nik: e.target.value }))
+                        }
+                        placeholder="Masukkan NIK"
+                        className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="nama-input"
+                        className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
+                      >
+                        Nama Lengkap
+                      </label>
+                      <input
+                        id="nama-input"
+                        type="text"
+                        value={employeeInfo.nama}
+                        onChange={(e) =>
+                          setEmployeeInfo((prev) => ({ ...prev, nama: e.target.value }))
+                        }
+                        placeholder="Masukkan nama lengkap"
+                        className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="diketahui-input"
+                        className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
+                      >
+                        Diketahui Oleh (Atasan 1)
+                      </label>
+                      <input
+                        id="diketahui-input"
+                        type="text"
+                        value={employeeInfo.diketahuiOleh}
+                        onChange={(e) =>
+                          setEmployeeInfo((prev) => ({ ...prev, diketahuiOleh: e.target.value }))
+                        }
+                        placeholder="Nama atasan pertama"
+                        className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="disetujui-input"
+                        className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
+                      >
+                        Disetujui Oleh (Atasan 2)
+                      </label>
+                      <input
+                        id="disetujui-input"
+                        type="text"
+                        value={employeeInfo.disetujuiOleh}
+                        onChange={(e) =>
+                          setEmployeeInfo((prev) => ({ ...prev, disetujuiOleh: e.target.value }))
+                        }
+                        placeholder="Nama atasan kedua"
+                        className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Signature Section */}
+                  <div className="pt-4 border-t border-[#E5E2D9]">
+                    <span className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-3">
+                      Signature (Dibuat Oleh)
+                    </span>
+                    <div className="flex items-center gap-4">
+                      {signatureData ? (
+                        <div className="flex items-center gap-4 p-3 border border-[#E5E2D9] rounded-xl">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={signatureData.imageData}
+                            alt="Signature"
+                            className="h-12 max-w-32 object-contain"
+                          />
+                          <button
+                            onClick={() => setShowSignatureModal(true)}
+                            className="text-xs text-[#5A6355] hover:text-[#4A5246] underline"
+                          >
+                            Ubah
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowSignatureModal(true)}
+                          className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-[#A4B494] rounded-xl text-[#5A6355] hover:bg-[#F8F7F3] transition-colors"
+                        >
+                          <Pen className="w-4 h-4" />
+                          <span className="text-sm">Tambah Tanda Tangan</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <ResultTable records={records.records} onUpdateRecord={handleUpdateRecord} />
           </div>
         )}
+
+        {/* Signature Input Modal */}
+        <SignatureInput
+          isOpen={showSignatureModal}
+          onClose={() => setShowSignatureModal(false)}
+          onSave={setSignatureData}
+          existingSignature={signatureData}
+        />
       </div>
     </div>
   );
