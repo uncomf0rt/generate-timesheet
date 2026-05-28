@@ -195,16 +195,8 @@ export default function PrivacyPage() {
             <div className="text-sm text-[#5A6355] leading-relaxed space-y-4">
               <p>
                 If you have any questions about this Privacy Policy or how the App handles your
-                data, please reach out via the GitHub repository.
+                data, please reach out to https://github.com/rizkyliandika.
               </p>
-              <a
-                href="https://github.com/your-repo/timesheet-generator/issues"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center text-[#A4B494] font-bold hover:underline gap-1 text-xs uppercase"
-              >
-                Open an Issue on GitHub
-              </a>
             </div>
           </section>
         </div>

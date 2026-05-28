@@ -1,4 +1,4 @@
-# Auto Timesheet Generator
+# Kala
 
 Generate timesheets from Azure DevOps commits and Jira issues.
 

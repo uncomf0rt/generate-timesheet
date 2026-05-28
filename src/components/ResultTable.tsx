@@ -1,11 +1,15 @@
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import React from 'react';
-import { DayRecord } from '../lib/types';
+import { DayRecord, KeteranganType } from '../lib/types';
 
 interface Props {
   records: DayRecord[];
   onUpdateRecord: (index: number, field: keyof DayRecord, value: any) => void;
+}
+
+function isLeaveType(status: KeteranganType): boolean {
+  return status !== 'Hari kerja';
 }
 
 export const ResultTable: React.FC<Props> = ({ records, onUpdateRecord }) => {
@@ -27,15 +31,27 @@ export const ResultTable: React.FC<Props> = ({ records, onUpdateRecord }) => {
                   </th>
                   <th
                     scope="col"
-                    className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-32"
+                    className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-28"
                   >
                     Hari
                   </th>
                   <th
                     scope="col"
-                    className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-32"
+                    className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-24"
                   >
-                    Status
+                    Jam Mulai
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-24"
+                  >
+                    Jam Berakhir
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-3 py-4 text-left text-[10px] uppercase tracking-widest font-bold text-[#8E897E] w-36"
+                  >
+                    Keterangan
                   </th>
                   <th
                     scope="col"
@@ -46,8 +62,8 @@ export const ResultTable: React.FC<Props> = ({ records, onUpdateRecord }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E5E2D9] bg-white text-[#3C3A36]">
-                {records.map((record) => {
-                  const isDayOff = record.status === 'Libur';
+                {records.map((record, index) => {
+                  const leave = isLeaveType(record.status);
                   const dateStr = format(record.date, 'dd MMM yyyy', { locale: id });
                   const dayName = format(record.date, 'EEEE', { locale: id });
                   const activities = [...record.tasks, ...record.commits];
@@ -56,25 +72,49 @@ export const ResultTable: React.FC<Props> = ({ records, onUpdateRecord }) => {
                   return (
                     <tr
                       key={rowKey}
-                      className={
-                        isDayOff ? 'bg-[#F8F7F3]' : 'hover:bg-[#F8F7F3]/50 transition-colors'
-                      }
+                      className={leave ? 'bg-[#FFF8E7]' : 'hover:bg-[#F8F7F3]/50 transition-colors'}
                     >
-                      <td className="whitespace-nowrap py-5 pl-6 pr-3 text-sm font-medium text-[#3E3D39]">
+                      <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium text-[#3E3D39]">
                         {dateStr}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-5 text-sm text-[#5A6355]">
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-[#5A6355]">
                         {dayName}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-5 text-sm">
+                      <td className="whitespace-nowrap px-3 py-4 text-sm">
+                        <input
+                          type="time"
+                          value={record.jamMulai || ''}
+                          onChange={(e) => onUpdateRecord(index, 'jamMulai', e.target.value)}
+                          disabled={leave}
+                          className={`block w-full rounded-xl border-0 py-1.5 pl-3 text-xs outline-none transition-shadow ${
+                            leave
+                              ? 'bg-[#FFF8E7] text-[#8E897E] cursor-not-allowed'
+                              : 'bg-[#F8F7F3] text-[#5A6355] focus:ring focus:ring-[#A4B494]/20'
+                          }`}
+                        />
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm">
+                        <input
+                          type="time"
+                          value={record.jamBerakhir || ''}
+                          onChange={(e) => onUpdateRecord(index, 'jamBerakhir', e.target.value)}
+                          disabled={leave}
+                          className={`block w-full rounded-xl border-0 py-1.5 pl-3 text-xs outline-none transition-shadow ${
+                            leave
+                              ? 'bg-[#FFF8E7] text-[#8E897E] cursor-not-allowed'
+                              : 'bg-[#F8F7F3] text-[#5A6355] focus:ring focus:ring-[#A4B494]/20'
+                          }`}
+                        />
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm">
                         <select
                           value={record.status}
                           onChange={(e) =>
-                            onUpdateRecord(records.indexOf(record), 'status', e.target.value)
+                            onUpdateRecord(index, 'status', e.target.value as KeteranganType)
                           }
                           className={`block w-full rounded-xl border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset outline-none focus:ring-2 focus:ring-inset text-xs font-bold sm:leading-6 ${
-                            isDayOff
-                              ? 'bg-[#EAE7DF] text-[#8E897E] ring-[#D9D5CB] focus:ring-[#8E897E]'
+                            leave
+                              ? 'bg-[#FFF8E7] text-[#8E897E] ring-[#D9D5CB] focus:ring-[#8E897E]'
                               : 'bg-[#F8F7F3] text-[#5A6355] ring-[#A4B494]/30 focus:ring-[#A4B494]'
                           }`}
                         >
@@ -86,22 +126,25 @@ export const ResultTable: React.FC<Props> = ({ records, onUpdateRecord }) => {
                                 ? 'Libur Akhir Pekan'
                                 : 'Libur'}
                           </option>
+                          <option value="Sakit">Sakit</option>
+                          <option value="Izin">Izin</option>
+                          <option value="Cuti">Cuti</option>
                         </select>
                       </td>
-                      <td className="px-3 py-5 text-sm text-[#5A6355]">
+                      <td className="px-3 py-4 text-sm text-[#5A6355]">
                         <textarea
-                          className="w-full resize-y bg-transparent border border-[#E5E2D9] rounded-xl focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 p-3 text-sm outline-none transition-shadow"
+                          className={`w-full resize-y border rounded-xl focus:ring focus:ring-[#A4B494]/20 p-3 text-sm outline-none transition-shadow ${
+                            leave
+                              ? 'bg-[#FFF8E7] border-[#E5E2D9]'
+                              : 'bg-transparent border-[#E5E2D9] focus:border-[#A4B494]'
+                          }`}
                           value={
                             record.editableActivity !== undefined
                               ? record.editableActivity
                               : activities.join('\n')
                           }
                           onChange={(e) =>
-                            onUpdateRecord(
-                              records.indexOf(record),
-                              'editableActivity',
-                              e.target.value
-                            )
+                            onUpdateRecord(index, 'editableActivity', e.target.value)
                           }
                           rows={Math.max(
                             2,
@@ -110,8 +153,9 @@ export const ResultTable: React.FC<Props> = ({ records, onUpdateRecord }) => {
                               : activities.join('\n')
                             ).split('\n').length
                           )}
+                          disabled={leave}
                           placeholder={
-                            isDayOff
+                            leave
                               ? 'Tidak ada aktivitas'
                               : '- Tidak ada commit atau task tercatat -'
                           }
