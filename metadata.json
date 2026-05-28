@@ -1,6 +1,6 @@
 {
-  "name": "Auto Timesheet Generator",
-  "description": "Generate timesheets from Azure DevOps commits and Jira issues.",
+  "name": "Kala",
+  "description": "Generate timesheets from Azure DevOps commits and Jira issues. Timesheet in a Blink.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

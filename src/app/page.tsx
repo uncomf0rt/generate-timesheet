@@ -1,18 +1,10 @@
 'use client';
 import { format, parseISO, subDays } from 'date-fns';
 import { id } from 'date-fns/locale';
-import {
-  ChevronDown,
-  ChevronUp,
-  DownloadCloud,
-  FileText,
-  HelpCircle,
-  Pen,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { DownloadCloud, FileText, HelpCircle, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import EmailTemplateSection from '@/components/EmailTemplateSection';
 import { HelpPanel } from '@/components/HelpPanel';
 import { OAuthCallback } from '@/components/OAuthCallback';
 import { ResultTable } from '@/components/ResultTable';
@@ -67,7 +59,7 @@ export default function App() {
   });
   const [loading, setLoading] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
+  const [forceEmployeeFormOpen, setForceEmployeeFormOpen] = useState(0);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
 
   // Employee info state
@@ -213,6 +205,11 @@ export default function App() {
   };
 
   const handleGenerate = async () => {
+    if (!employeeInfo.nik || !employeeInfo.nama) {
+      alert('Harap lengkapi NIK dan Nama sebelum generate timesheet.');
+      return;
+    }
+
     if (!config.adoOrg || !config.adoProject || !config.adoEmail || !config.azurePat) {
       alert('Harap lengkapi semua isian Azure DevOps (Organization, Project, Email, dan PAT).');
       return;
@@ -249,6 +246,20 @@ export default function App() {
     }
   };
 
+  const handleExport = async () => {
+    if (!employeeInfo.nik || !employeeInfo.nama) {
+      alert('Harap lengkapi NIK dan Nama sebelum export.');
+      return;
+    }
+    await generateTemplateExcel(
+      records.records,
+      config.startDate,
+      config.endDate,
+      employeeInfo,
+      signatureData
+    );
+  };
+
   // ============================================================================
   // RENDER - Early return for OAuth callback
   // ============================================================================
@@ -281,7 +292,7 @@ export default function App() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8">
           <div className="text-center md:text-left">
             <h1 className="text-4xl font-serif italic text-[#3E3D39] tracking-tight sm:text-5xl">
-              Auto Timesheet Generator
+              Kala
             </h1>
             <p className="mt-4 max-w-2xl mx-auto md:mx-0 text-xs uppercase tracking-widest text-[#9A958A] font-semibold">
               Otomatisasi pembuatan timesheet dari Azure DevOps commits dan Jira Issues
@@ -289,15 +300,6 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleClearSavedData}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border bg-white text-red-500 border-[#E5E2D9] hover:bg-red-50"
-              title="Hapus data kredensial yang tersimpan di browser"
-            >
-              <Trash2 className="w-4 h-4" />
-              Hapus Data
-            </button>
-
             <button
               onClick={() => setShowHelp(!showHelp)}
               className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border ${
@@ -323,11 +325,19 @@ export default function App() {
           config={config}
           onChange={handleChange}
           onGenerate={handleGenerate}
+          onClearData={handleClearSavedData}
           loading={loading}
           jiraToken={jiraToken}
           onJiraLogin={handleJiraLogin}
           onJiraLogout={handleJiraLogout}
           jiraLoginLoading={jiraLoginLoading}
+          employeeInfo={employeeInfo}
+          onEmployeeInfoChange={(field, value) =>
+            setEmployeeInfo((prev) => ({ ...prev, [field]: value }))
+          }
+          signatureData={signatureData}
+          onOpenSignatureModal={() => setShowSignatureModal(true)}
+          forceEmployeeFormOpen={forceEmployeeFormOpen}
         />
 
         {/* Results */}
@@ -353,163 +363,30 @@ export default function App() {
                   </div>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-4 shrink-0">
+              <div className="h-10 flex flex-wrap items-center gap-4 shrink-0">
                 <button
-                  onClick={() => exportToPDF(records.records, config.startDate, config.endDate)}
-                  className="px-6 py-2.5 bg-white rounded-full border border-[#E5E2D9] text-xs font-bold uppercase tracking-wider text-[#5A6355] shadow-sm flex items-center gap-2 hover:bg-[#F8F7F3] transition-colors"
+                  onClick={handleExport}
+                  className="h-full px-6 bg-white rounded-full border border-[#E5E2D9] text-xs font-bold uppercase tracking-wider text-[#5A6355] shadow-sm flex items-center gap-2 hover:bg-[#F8F7F3] transition-colors"
                 >
-                  <FileText className="w-4 h-4 text-[#B8865D]" />
-                  Export PDF
+                  <DownloadCloud className="w-4 h-4 text-[#B8865D]" />
+                  Export Excel (.xlsx)
                 </button>
                 <button
-                  onClick={async () => {
-                    if (!employeeInfo.nik || !employeeInfo.nama) {
-                      alert('Harap lengkapi NIK dan Nama sebelum export.');
-                      setShowEmployeeForm(true);
-                      return;
-                    }
-                    await generateTemplateExcel(
+                  onClick={() =>
+                    exportToPDF(
                       records.records,
                       config.startDate,
                       config.endDate,
                       employeeInfo,
                       signatureData
-                    );
-                  }}
-                  className="px-6 py-2.5 bg-[#5A6355] text-[#F8F7F3] rounded-full text-xs font-bold uppercase tracking-wider shadow-md flex items-center gap-2 hover:bg-[#4A5246] transition-colors"
+                    )
+                  }
+                  className="h-full px-6 bg-[#5A6355] text-[#F8F7F3] rounded-full text-xs font-bold uppercase tracking-wider shadow-md flex items-center gap-2 hover:bg-[#4A5246] transition-colors"
                 >
-                  <DownloadCloud className="w-4 h-4" />
-                  Export Excel (.xlsx)
+                  <FileText className="w-4 h-4" />
+                  Export PDF
                 </button>
               </div>
-            </div>
-
-            {/* Employee Info Form */}
-            <div className="border border-[#E5E2D9] rounded-2xl overflow-hidden">
-              <button
-                onClick={() => setShowEmployeeForm(!showEmployeeForm)}
-                className="w-full flex items-center justify-between px-6 py-4 bg-[#EAE7DF] hover:bg-[#E0DDD5] transition-colors"
-              >
-                <span className="text-xs font-bold uppercase tracking-widest text-[#5A6355]">
-                  Informasi Karyawan & Tanda Tangan
-                </span>
-                {showEmployeeForm ? (
-                  <ChevronUp className="w-4 h-4 text-[#5A6355]" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-[#5A6355]" />
-                )}
-              </button>
-              {showEmployeeForm && (
-                <div className="p-6 bg-white space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label
-                        htmlFor="nik-input"
-                        className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
-                      >
-                        NIK
-                      </label>
-                      <input
-                        id="nik-input"
-                        type="text"
-                        value={employeeInfo.nik}
-                        onChange={(e) =>
-                          setEmployeeInfo((prev) => ({ ...prev, nik: e.target.value }))
-                        }
-                        placeholder="Masukkan NIK"
-                        className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="nama-input"
-                        className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
-                      >
-                        Nama Lengkap
-                      </label>
-                      <input
-                        id="nama-input"
-                        type="text"
-                        value={employeeInfo.nama}
-                        onChange={(e) =>
-                          setEmployeeInfo((prev) => ({ ...prev, nama: e.target.value }))
-                        }
-                        placeholder="Masukkan nama lengkap"
-                        className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="diketahui-input"
-                        className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
-                      >
-                        Diketahui Oleh (Atasan 1)
-                      </label>
-                      <input
-                        id="diketahui-input"
-                        type="text"
-                        value={employeeInfo.diketahuiOleh}
-                        onChange={(e) =>
-                          setEmployeeInfo((prev) => ({ ...prev, diketahuiOleh: e.target.value }))
-                        }
-                        placeholder="Nama atasan pertama"
-                        className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="disetujui-input"
-                        className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
-                      >
-                        Disetujui Oleh (Atasan 2)
-                      </label>
-                      <input
-                        id="disetujui-input"
-                        type="text"
-                        value={employeeInfo.disetujuiOleh}
-                        onChange={(e) =>
-                          setEmployeeInfo((prev) => ({ ...prev, disetujuiOleh: e.target.value }))
-                        }
-                        placeholder="Nama atasan kedua"
-                        className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Signature Section */}
-                  <div className="pt-4 border-t border-[#E5E2D9]">
-                    <span className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-3">
-                      Signature (Dibuat Oleh)
-                    </span>
-                    <div className="flex items-center gap-4">
-                      {signatureData ? (
-                        <div className="flex items-center gap-4 p-3 border border-[#E5E2D9] rounded-xl">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={signatureData.imageData}
-                            alt="Signature"
-                            className="h-12 max-w-32 object-contain"
-                          />
-                          <button
-                            onClick={() => setShowSignatureModal(true)}
-                            className="text-xs text-[#5A6355] hover:text-[#4A5246] underline"
-                          >
-                            Ubah
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setShowSignatureModal(true)}
-                          className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-[#A4B494] rounded-xl text-[#5A6355] hover:bg-[#F8F7F3] transition-colors"
-                        >
-                          <Pen className="w-4 h-4" />
-                          <span className="text-sm">Tambah Tanda Tangan</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             <ResultTable records={records.records} onUpdateRecord={handleUpdateRecord} />
@@ -523,6 +400,15 @@ export default function App() {
           onSave={setSignatureData}
           existingSignature={signatureData}
         />
+
+        {/* Email Template Section */}
+        {records.records.length > 0 && (
+          <EmailTemplateSection
+            employeeInfo={employeeInfo}
+            startDate={config.startDate}
+            endDate={config.endDate}
+          />
+        )}
       </div>
     </div>
   );

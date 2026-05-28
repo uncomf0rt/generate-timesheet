@@ -1,5 +1,6 @@
-import axios from 'axios';
 import { NextRequest } from 'next/server';
+
+const API_BASE = 'https://libur.deno.dev/api';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -7,14 +8,15 @@ export async function GET(req: NextRequest) {
   const month = searchParams.get('month') || '';
 
   try {
-    const response = await axios.get(`https://api-hari-libur.vercel.app/api`, {
-      params: {
-        year,
-        month,
-      },
-    });
+    const params = new URLSearchParams();
+    if (year) params.set('year', year);
+    if (month) params.set('month', month);
 
-    return Response.json(response.data?.data || []);
+    const url = `${API_BASE}${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    return Response.json(data);
   } catch {
     return Response.json([]);
   }

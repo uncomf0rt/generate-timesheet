@@ -5,8 +5,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Timesheet Generator',
-  description: 'Otomatisasi pembuatan timesheet dari Azure DevOps commits dan Jira Issues',
+  title: 'Kala - Timesheet in a Blink',
+  description: 'Generate timesheets from Azure DevOps commits and Jira issues',
 };
 
 export default function RootLayout({

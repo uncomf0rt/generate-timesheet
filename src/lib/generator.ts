@@ -105,7 +105,7 @@ export async function generateTimesheetData(
     // Check if it's a holiday
     const dayStr = format(day, 'yyyy-MM-dd');
     const holidayInfo = holidaysData.find((h: any) => h.date === dayStr);
-    const isHoliday = !!holidayInfo;
+    const isHoliday = holidayInfo?.is_national_holiday === true;
 
     const isDayOff = isWeekend || isHoliday;
 
@@ -125,7 +125,7 @@ export async function generateTimesheetData(
       date: day,
       isWeekend,
       isHoliday,
-      holidayName: holidayInfo?.description,
+      holidayName: holidayInfo?.name,
       status: isDayOff ? 'Libur' : 'Hari kerja',
       commits: dayCommits,
       tasks: dayTasks,

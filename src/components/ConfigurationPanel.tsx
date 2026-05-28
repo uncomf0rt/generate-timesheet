@@ -3,39 +3,99 @@ import {
   Calendar,
   CheckCircle,
   ChevronDown,
+  ChevronUp,
   Link2,
   Loader2,
   LogIn,
   LogOut,
+  Pen,
   Settings2,
+  Sparkle,
+  Sparkles,
+  Trash2,
 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from '@/lib/api';
-import { ADOProject, Config, OAuthToken } from '../lib/types';
+import { ADOProject, Config, EmployeeInfo, OAuthToken, SignatureData } from '../lib/types';
 
 interface Props {
   config: Config;
   onChange: (key: keyof Config, value: any) => void;
   onGenerate: () => void;
+  onClearData: () => void;
   loading: boolean;
   jiraToken?: OAuthToken;
   onJiraLogin: () => void;
   onJiraLogout: () => void;
   jiraLoginLoading?: boolean;
+  employeeInfo: EmployeeInfo;
+  onEmployeeInfoChange: (field: keyof EmployeeInfo, value: string) => void;
+  signatureData?: SignatureData;
+  onOpenSignatureModal: () => void;
+  forceEmployeeFormOpen?: number;
 }
 
 type JiraStatus = 'checking' | 'valid' | 'invalid' | 'disconnected';
+
+const EMPLOYEE_FORM_VISIBLE_KEY = 'timesheet_employee_form_visible';
+const AZURE_JIRA_VISIBLE_KEY = 'timesheet_azure_jira_visible';
 
 const ConfigurationPanel: React.FC<Props> = ({
   config,
   onChange,
   onGenerate,
+  onClearData,
   loading,
   jiraToken,
   onJiraLogin,
   onJiraLogout,
   jiraLoginLoading = false,
+  employeeInfo,
+  onEmployeeInfoChange,
+  signatureData,
+  onOpenSignatureModal,
+  forceEmployeeFormOpen,
 }) => {
+  // ============================================================================
+  // STATE HOOKS - Local UI state with localStorage persistence
+  // ============================================================================
+  const [employeeFormVisible, setEmployeeFormVisible] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(EMPLOYEE_FORM_VISIBLE_KEY);
+      if (stored !== null) {
+        return stored === 'true';
+      }
+    }
+    return true;
+  });
+
+  const [azureJiraVisible, setAzureJiraVisible] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(AZURE_JIRA_VISIBLE_KEY);
+      if (stored !== null) {
+        return stored === 'true';
+      }
+    }
+    return true;
+  });
+
+  // Sync employeeFormVisible to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(EMPLOYEE_FORM_VISIBLE_KEY, String(employeeFormVisible));
+  }, [employeeFormVisible]);
+
+  // Sync azureJiraVisible to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(AZURE_JIRA_VISIBLE_KEY, String(azureJiraVisible));
+  }, [azureJiraVisible]);
+
+  // Effect: Force open employee form when triggered from parent
+  useEffect(() => {
+    if (forceEmployeeFormOpen && forceEmployeeFormOpen > 0) {
+      setEmployeeFormVisible(true);
+    }
+  }, [forceEmployeeFormOpen]);
+
   // ============================================================================
   // STATE HOOKS - ADO
   // ============================================================================
@@ -167,8 +227,8 @@ const ConfigurationPanel: React.FC<Props> = ({
 
   return (
     <div className="bg-white rounded-[40px] border border-[#E5E2D9] shadow-sm p-8 md:p-10 space-y-10">
-      {/* Date Range Selection */}
-      <div>
+      {/* Section 1: Periode Timesheet */}
+      <div className="pb-6 border-b border-[#E5E2D9]">
         <h3 className="flex items-center text-sm uppercase tracking-widest font-bold text-[#8E897E] mb-6 pb-4 border-b border-[#E5E2D9]">
           <Calendar className="w-5 h-5 mr-3 text-[#A4B494]" />
           Periode Timesheet
@@ -209,226 +269,384 @@ const ConfigurationPanel: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* Azure DevOps Section */}
-        <div>
-          <h3 className="flex items-center text-sm uppercase tracking-widest font-bold text-[#8E897E] mb-6 pb-4 border-b border-[#E5E2D9]">
-            <Link2 className="w-5 h-5 mr-3 text-[#5A6355]" />
-            Azure DevOps (Utama)
-          </h3>
-          <div className="space-y-5">
-            {/* PAT Field */}
-            <div>
-              <label
-                htmlFor="azurePat"
-                className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
-              >
-                Personal Access Token (PAT)
-              </label>
-              <input
-                id="azurePat"
-                type="password"
-                value={config.azurePat}
-                onChange={(e) => handlePatChange(e.target.value)}
-                placeholder="Paste your Azure DevOps PAT"
-                className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
-              />
-            </div>
-
-            {/* Committer Field */}
-            <div>
-              <label
-                htmlFor="adoEmail"
-                className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
-              >
-                Email Committer
-              </label>
-              <input
-                id="adoEmail"
-                type="email"
-                value={config.adoEmail}
-                onChange={(e) => onChange('adoEmail', e.target.value)}
-                placeholder="email@company.com"
-                className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
-              />
-            </div>
-
-            {/* Organization - Text Input */}
-            <div>
-              <label
-                htmlFor="adoOrg"
-                className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
-              >
-                Organization
-              </label>
-              <input
-                id="adoOrg"
-                type="text"
-                value={config.adoOrg}
-                onChange={(e) => handleOrgChange(e.target.value)}
-                placeholder="mycompany"
-                className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
-              />
-            </div>
-
-            {/* Project Dropdown (Multiselect) */}
-            <div ref={projectDropdownRef}>
-              <label
-                htmlFor="projectsDropdown"
-                className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
-              >
-                Projects
-              </label>
-              <div className="relative">
-                <button
-                  id="projectsDropdown"
-                  type="button"
-                  onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
-                  disabled={!config.adoOrg || !config.azurePat || loadingProjects}
-                  className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-left text-[#3E3D39] flex items-center justify-between disabled:bg-[#EFEDE7] disabled:cursor-not-allowed disabled:text-[#9A958A]"
+      {/* Section 2: Informasi Karyawan & Tanda Tangan */}
+      <div className="border border-[#E5E2D9] rounded-2xl overflow-hidden">
+        <button
+          onClick={() => setEmployeeFormVisible(!employeeFormVisible)}
+          className="w-full flex items-center justify-between px-6 py-4 bg-[#EAE7DF] hover:bg-[#E0DDD5] transition-colors"
+        >
+          <span className="text-xs font-bold uppercase tracking-widest text-[#5A6355]">
+            Informasi Karyawan & Tanda Tangan
+          </span>
+          {employeeFormVisible ? (
+            <ChevronUp className="w-4 h-4 text-[#5A6355]" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-[#5A6355]" />
+          )}
+        </button>
+        {employeeFormVisible && (
+          <div className="p-6 bg-white space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  htmlFor="nik-input"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
                 >
-                  <span className={selectedProjects.length ? '' : 'text-[#D4CFC4]'}>
-                    {loadingProjects ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Loading projects...
-                      </span>
-                    ) : selectedProjects.length > 0 ? (
-                      `${selectedProjects.length} project(s) selected`
-                    ) : (
-                      'Select projects'
-                    )}
-                  </span>
-                  {config.adoOrg && config.azurePat && (
-                    <ChevronDown
-                      className={`w-4 h-4 text-[#9A958A] transition-transform ${projectDropdownOpen ? 'rotate-180' : ''}`}
+                  NIK
+                </label>
+                <input
+                  id="nik-input"
+                  type="text"
+                  value={employeeInfo.nik}
+                  onChange={(e) => onEmployeeInfoChange('nik', e.target.value)}
+                  placeholder="Masukkan NIK"
+                  className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="nama-input"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
+                >
+                  Nama Lengkap
+                </label>
+                <input
+                  id="nama-input"
+                  type="text"
+                  value={employeeInfo.nama}
+                  onChange={(e) => onEmployeeInfoChange('nama', e.target.value)}
+                  placeholder="Masukkan nama lengkap"
+                  className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="diketahui-input"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
+                >
+                  Diketahui Oleh (Atasan 1)
+                </label>
+                <input
+                  id="diketahui-input"
+                  type="text"
+                  value={employeeInfo.diketahuiOleh}
+                  onChange={(e) => onEmployeeInfoChange('diketahuiOleh', e.target.value)}
+                  placeholder="Nama atasan pertama"
+                  className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="disetujui-input"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
+                >
+                  Disetujui Oleh (Atasan 2)
+                </label>
+                <input
+                  id="disetujui-input"
+                  type="text"
+                  value={employeeInfo.disetujuiOleh}
+                  onChange={(e) => onEmployeeInfoChange('disetujuiOleh', e.target.value)}
+                  placeholder="Nama atasan kedua"
+                  className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
+                />
+              </div>
+            </div>
+
+            {/* Signature Section */}
+            <div className="pt-4 border-t border-[#E5E2D9]">
+              <span className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-3">
+                Signature (Dibuat Oleh)
+              </span>
+              <div className="flex items-center gap-4">
+                {signatureData ? (
+                  <div className="flex items-center gap-4 p-3 border border-[#E5E2D9] rounded-xl">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={signatureData.imageData}
+                      alt="Signature"
+                      className="h-12 max-w-32 object-contain"
                     />
-                  )}
-                </button>
-
-                {projectDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white rounded-2xl border border-[#E5E2D9] shadow-lg max-h-60 overflow-auto">
-                    {projects.length === 0 && !loadingProjects && (
-                      <div className="p-3 text-sm text-[#9A958A]">
-                        {projectsError || 'No projects found'}
-                      </div>
-                    )}
-                    {projects.map((project) => (
-                      <label
-                        key={project.id}
-                        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#F8F7F3] ${selectedProjects.includes(project.name) ? 'bg-[#F8F7F3]' : ''}`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedProjects.includes(project.name)}
-                          onChange={() => handleProjectToggle(project.name)}
-                          className="w-4 h-4 rounded border-[#E5E2D9] text-[#A4B494] focus:ring-[#A4B494]"
-                        />
-                        <span className="text-sm text-[#3E3D39]">{project.name}</span>
-                      </label>
-                    ))}
+                    <button
+                      onClick={onOpenSignatureModal}
+                      className="text-xs text-[#5A6355] hover:text-[#4A5246] underline"
+                    >
+                      Ubah
+                    </button>
                   </div>
+                ) : (
+                  <button
+                    onClick={onOpenSignatureModal}
+                    className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-[#A4B494] rounded-xl text-[#5A5A5A] hover:bg-[#F8F7F3] transition-colors"
+                  >
+                    <Pen className="w-4 h-4" />
+                    <span className="text-sm">Tambah Tanda Tangan</span>
+                  </button>
                 )}
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Jira Section */}
-        <div>
-          <h3 className="flex items-center text-sm uppercase tracking-widest font-bold text-[#8E897E] mb-6 pb-4 border-b border-[#E5E2D9]">
-            <Settings2 className="w-5 h-5 mr-3 text-[#A4B494]" />
-            Jira (Opsional)
-          </h3>
-          <div className="space-y-5">
-            {/* Jira OAuth Status */}
-            {jiraStatus === 'checking' && (
-              <div className="bg-[#F8F7F3] border border-[#E5E2D9] rounded-2xl p-4 flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-[#9A958A]" />
-                <span className="text-sm text-[#9A958A]">Checking Jira connection...</span>
-              </div>
-            )}
-            {jiraStatus === 'valid' && (
-              <div className="bg-[#E7F5E4] border border-[#5A6355]/20 rounded-2xl p-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-[#5A6355]" />
-                  <span className="text-sm font-semibold text-[#5A6355]">Connected to Jira</span>
-                </div>
-                <button
-                  onClick={onJiraLogout}
-                  className="text-xs font-bold text-[#5A6355] hover:underline flex items-center gap-1"
-                >
-                  <LogOut className="w-3 h-3" />
-                  Disconnect
-                </button>
-              </div>
-            )}
-            {jiraStatus === 'invalid' && (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-600" />
-                  <span className="text-sm font-semibold text-amber-700">
-                    Jira needs re-authentication
-                  </span>
-                </div>
-                <button
-                  onClick={onJiraLogin}
-                  disabled={jiraLoginLoading}
-                  className="text-xs font-bold text-amber-700 hover:underline flex items-center gap-1"
-                >
-                  <LogIn className="w-3 h-3" />
-                  Reconnect
-                </button>
-              </div>
-            )}
-            {jiraStatus === 'disconnected' && (
-              <button
-                onClick={onJiraLogin}
-                disabled={jiraLoginLoading}
-                className="w-full px-4 py-3 rounded-2xl bg-[#A4B494] text-white text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#94A484] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {jiraLoginLoading ? (
-                  <>
-                    <svg
-                      aria-label="Loading"
-                      className="animate-spin h-4 w-4"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-4 h-4" />
-                    Sign in with Jira
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
-      <div className="pt-8 mb-0 flex justify-end">
+      {/* Section 3: Azure DevOps & Jira (Collapsible) */}
+      <div className="border border-[#E5E2D9] rounded-2xl overflow-hidden">
+        <button
+          onClick={() => setAzureJiraVisible(!azureJiraVisible)}
+          className="w-full flex items-center justify-between px-6 py-4 bg-[#EAE7DF] hover:bg-[#E0DDD5] transition-colors"
+        >
+          <span className="text-xs font-bold uppercase tracking-widest text-[#5A6355]">
+            Azure DevOps & Jira
+          </span>
+          {azureJiraVisible ? (
+            <ChevronUp className="w-4 h-4 text-[#5A6355]" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-[#5A6355]" />
+          )}
+        </button>
+        {azureJiraVisible && (
+          <div className="p-6 bg-white">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              {/* Azure DevOps Section */}
+              <div>
+                <h3 className="flex items-center text-sm uppercase tracking-widest font-bold text-[#8E897E] mb-6 pb-4 border-b border-[#E5E2D9]">
+                  <Link2 className="w-5 h-5 mr-3 text-[#5A6355]" />
+                  Azure DevOps (Utama)
+                </h3>
+                <div className="space-y-5">
+                  {/* PAT Field */}
+                  <div>
+                    <label
+                      htmlFor="azurePat"
+                      className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
+                    >
+                      Personal Access Token (PAT)
+                    </label>
+                    <input
+                      id="azurePat"
+                      type="password"
+                      value={config.azurePat}
+                      onChange={(e) => handlePatChange(e.target.value)}
+                      placeholder="Paste your Azure DevOps PAT"
+                      className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
+                    />
+                  </div>
+
+                  {/* Committer Field */}
+                  <div>
+                    <label
+                      htmlFor="adoEmail"
+                      className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
+                    >
+                      Email Committer
+                    </label>
+                    <input
+                      id="adoEmail"
+                      type="email"
+                      value={config.adoEmail}
+                      onChange={(e) => onChange('adoEmail', e.target.value)}
+                      placeholder="email@company.com"
+                      className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
+                    />
+                  </div>
+
+                  {/* Organization - Text Input */}
+                  <div>
+                    <label
+                      htmlFor="adoOrg"
+                      className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
+                    >
+                      Organization
+                    </label>
+                    <input
+                      id="adoOrg"
+                      type="text"
+                      value={config.adoOrg}
+                      onChange={(e) => handleOrgChange(e.target.value)}
+                      placeholder="mycompany"
+                      className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
+                    />
+                  </div>
+
+                  {/* Project Dropdown (Multiselect) */}
+                  <div ref={projectDropdownRef}>
+                    <label
+                      htmlFor="projectsDropdown"
+                      className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
+                    >
+                      Projects
+                    </label>
+                    <div className="relative">
+                      <button
+                        id="projectsDropdown"
+                        type="button"
+                        onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
+                        disabled={!config.adoOrg || !config.azurePat || loadingProjects}
+                        className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-left text-[#3E3D39] flex items-center justify-between disabled:bg-[#EFEDE7] disabled:cursor-not-allowed disabled:text-[#9A958A]"
+                      >
+                        <span className={selectedProjects.length ? '' : 'text-[#D4CFC4]'}>
+                          {loadingProjects ? (
+                            <span className="flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Loading projects...
+                            </span>
+                          ) : selectedProjects.length > 0 ? (
+                            `${selectedProjects.length} project(s) selected`
+                          ) : (
+                            'Select projects'
+                          )}
+                        </span>
+                        {config.adoOrg && config.azurePat && (
+                          <ChevronDown
+                            className={`w-4 h-4 text-[#9A958A] transition-transform ${projectDropdownOpen ? 'rotate-180' : ''}`}
+                          />
+                        )}
+                      </button>
+
+                      {projectDropdownOpen && (
+                        <div className="absolute z-10 w-full mt-1 bg-white rounded-2xl border border-[#E5E2D9] shadow-lg max-h-60 overflow-auto">
+                          {projects.length === 0 && !loadingProjects && (
+                            <div className="p-3 text-sm text-[#9A958A]">
+                              {projectsError || 'No projects found'}
+                            </div>
+                          )}
+                          {projects.map((project) => (
+                            <label
+                              key={project.id}
+                              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#F8F7F3] ${selectedProjects.includes(project.name) ? 'bg-[#F8F7F3]' : ''}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedProjects.includes(project.name)}
+                                onChange={() => handleProjectToggle(project.name)}
+                                className="w-4 h-4 rounded border-[#E5E2D9] text-[#A4B494] focus:ring-[#A4B494]"
+                              />
+                              <span className="text-sm text-[#3E3D39]">{project.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Jira Section */}
+              <div>
+                <h3 className="flex items-center text-sm uppercase tracking-widest font-bold text-[#8E897E] mb-6 pb-4 border-b border-[#E5E2D9]">
+                  <Settings2 className="w-5 h-5 mr-3 text-[#A4B494]" />
+                  Jira (Opsional)
+                </h3>
+                <div className="space-y-5">
+                  {/* Jira OAuth Status */}
+                  {jiraStatus === 'checking' && (
+                    <div className="bg-[#F8F7F3] border border-[#E5E2D9] rounded-2xl p-4 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#9A958A]" />
+                      <span className="text-sm text-[#9A958A]">Checking Jira connection...</span>
+                    </div>
+                  )}
+                  {jiraStatus === 'valid' && (
+                    <div className="bg-[#E7F5E4] border border-[#5A6355]/20 rounded-2xl p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-[#5A6355]" />
+                        <span className="text-sm font-semibold text-[#5A6355]">
+                          Connected to Jira
+                        </span>
+                      </div>
+                      <button
+                        onClick={onJiraLogout}
+                        className="text-xs font-bold text-[#5A6355] hover:underline flex items-center gap-1"
+                      >
+                        <LogOut className="w-3 h-3" />
+                        Disconnect
+                      </button>
+                    </div>
+                  )}
+                  {jiraStatus === 'invalid' && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-amber-600" />
+                        <span className="text-sm font-semibold text-amber-700">
+                          Jira needs re-authentication
+                        </span>
+                      </div>
+                      <button
+                        onClick={onJiraLogin}
+                        disabled={jiraLoginLoading}
+                        className="text-xs font-bold text-amber-700 hover:underline flex items-center gap-1"
+                      >
+                        <LogIn className="w-3 h-3" />
+                        Reconnect
+                      </button>
+                    </div>
+                  )}
+                  {jiraStatus === 'disconnected' && (
+                    <button
+                      onClick={onJiraLogin}
+                      disabled={jiraLoginLoading}
+                      className="w-full px-4 py-3 rounded-2xl bg-[#A4B494] text-white text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#94A484] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {jiraLoginLoading ? (
+                        <>
+                          <svg
+                            aria-label="Loading"
+                            className="animate-spin h-4 w-4"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <LogIn className="w-4 h-4" />
+                          Sign in with Jira
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="pt-6 h-16 border-t border-[#E5E2D9] flex justify-end gap-4 items-center">
+        {config.adoOrg ||
+        config.adoEmail ||
+        config.azurePat ||
+        jiraStatus === 'valid' ||
+        employeeInfo.nik ||
+        employeeInfo.nama ? (
+          <button
+            onClick={onClearData}
+            className="h-full flex items-center gap-2 px-6 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border bg-white text-red-500 border-[#E5E2D9] hover:bg-red-50"
+            title="Hapus data kredensial yang tersimpan di browser"
+          >
+            <Trash2 className="w-4 h-4" />
+            Hapus Data
+          </button>
+        ) : null}
         <button
           onClick={onGenerate}
           disabled={loading}
-          className="inline-flex items-center px-8 py-3.5 border border-transparent text-sm uppercase tracking-wider font-bold rounded-full shadow-md text-[#F8F7F3] bg-[#5A6355] hover:bg-[#4A5246] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="h-full inline-flex items-center px-8 border border-transparent text-xs uppercase tracking-wider font-bold rounded-full shadow-md text-[#F8F7F3] bg-[#5A6355] hover:bg-[#4A5246] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? (
             <>
@@ -456,7 +674,9 @@ const ConfigurationPanel: React.FC<Props> = ({
               Memproses Data...
             </>
           ) : (
-            'Generate Timesheet'
+            <>
+              <Sparkle className="w-4 h-4 mr-2" /> Generate Timesheet
+            </>
           )}
         </button>
       </div>
