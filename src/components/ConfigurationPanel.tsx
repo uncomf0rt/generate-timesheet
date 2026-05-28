@@ -270,10 +270,10 @@ const ConfigurationPanel: React.FC<Props> = ({
       </div>
 
       {/* Section 2: Informasi Karyawan & Tanda Tangan */}
-      <div className="border border-[#E5E2D9] rounded-2xl overflow-hidden">
+      <div className="border border-[#E5E2D9] rounded-2xl">
         <button
           onClick={() => setEmployeeFormVisible(!employeeFormVisible)}
-          className="w-full flex items-center justify-between px-6 py-4 bg-[#EAE7DF] hover:bg-[#E0DDD5] transition-colors"
+          className="w-full flex items-center justify-between px-6 py-4 bg-[#EAE7DF] hover:bg-[#E0DDD5] transition-colors rounded-2xl"
         >
           <span className="text-xs font-bold uppercase tracking-widest text-[#5A6355]">
             Informasi Karyawan & Tanda Tangan
@@ -390,10 +390,10 @@ const ConfigurationPanel: React.FC<Props> = ({
       </div>
 
       {/* Section 3: Azure DevOps & Jira (Collapsible) */}
-      <div className="border border-[#E5E2D9] rounded-2xl overflow-hidden">
+      <div className="border border-[#E5E2D9] rounded-2xl">
         <button
           onClick={() => setAzureJiraVisible(!azureJiraVisible)}
-          className="w-full flex items-center justify-between px-6 py-4 bg-[#EAE7DF] hover:bg-[#E0DDD5] transition-colors"
+          className="w-full flex items-center justify-between px-6 py-4 bg-[#EAE7DF] hover:bg-[#E0DDD5] transition-colors rounded-2xl"
         >
           <span className="text-xs font-bold uppercase tracking-widest text-[#5A6355]">
             Azure DevOps & Jira
@@ -469,7 +469,7 @@ const ConfigurationPanel: React.FC<Props> = ({
                   </div>
 
                   {/* Project Dropdown (Multiselect) */}
-                  <div ref={projectDropdownRef}>
+                  <div ref={projectDropdownRef} className="relative z-[100]">
                     <label
                       htmlFor="projectsDropdown"
                       className="block text-[10px] uppercase font-bold text-[#9A958A] mb-2 tracking-wider"
@@ -504,7 +504,7 @@ const ConfigurationPanel: React.FC<Props> = ({
                       </button>
 
                       {projectDropdownOpen && (
-                        <div className="absolute z-10 w-full mt-1 bg-white rounded-2xl border border-[#E5E2D9] shadow-lg max-h-60 overflow-auto">
+                        <div className="absolute z-50 w-full mt-1 bg-white rounded-2xl border border-[#E5E2D9] shadow-lg max-h-60 overflow-auto">
                           {projects.length === 0 && !loadingProjects && (
                             <div className="p-3 text-sm text-[#9A958A]">
                               {projectsError || 'No projects found'}

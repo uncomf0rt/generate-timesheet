@@ -360,7 +360,7 @@ export function exportToPDF(
   const colWidthsMm = baseColWidths.map((w) => Math.max(w * widthScale, w * 0.7)); // allow shrink to 70%
 
   // Dynamic font sizes - more aggressive
-  const headerFontSize = Math.max(5, Math.min(7, 7 * widthScale))
+  const headerFontSize = Math.max(5, Math.min(7, 7 * widthScale));
   const dataFontSize = Math.max(5, Math.min(7, 7 * widthScale));
   const summaryFontSize = Math.max(5, Math.min(7, 7 * widthScale));
 
@@ -442,7 +442,11 @@ export function exportToPDF(
         // Deskripsi - wrap text with smaller font
         doc.setFontSize(Math.max(4, dataFontSize - 1));
         const lines = doc.splitTextToSize(rowData[j], w - 1);
-        doc.text(lines.slice(0, Math.floor(dataRowHeight / (dataFontSize * 0.4))), xPos + 0.5, y + dataRowHeight - 0.5);
+        doc.text(
+          lines.slice(0, Math.floor(dataRowHeight / (dataFontSize * 0.4))),
+          xPos + 0.5,
+          y + dataRowHeight - 0.5
+        );
       } else {
         doc.text(rowData[j] || '', xPos + w / 2, y + dataRowHeight - 0.8, { align: 'center' });
       }
