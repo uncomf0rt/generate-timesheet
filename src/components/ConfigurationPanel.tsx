@@ -11,7 +11,6 @@ import {
   Pen,
   Settings2,
   Sparkle,
-  Sparkles,
   Trash2,
 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -266,6 +265,28 @@ const ConfigurationPanel: React.FC<Props> = ({
               className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
             />
           </div>
+        </div>
+
+        {/* Autofill Toggle */}
+        <div className="mt-6 pt-6 border-t border-[#E5E2D9]">
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={config.autoFillFromExternal}
+                onChange={(e) => onChange('autoFillFromExternal', e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-6 bg-[#E5E2D9] rounded-full peer-checked:bg-[#A4B494] transition-colors" />
+              <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-[#5A6355] block">Auto-fill Aktivitas</span>
+              <span className="text-[10px] text-[#9A958A]">
+                Isi otomatis aktivitas dari Azure DevOps & Jira saat generate
+              </span>
+            </div>
+          </label>
         </div>
       </div>
 

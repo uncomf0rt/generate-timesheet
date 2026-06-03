@@ -1,5 +1,5 @@
 'use client';
-import { format, parseISO, subDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { HelpCircle, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
@@ -43,6 +43,7 @@ export default function App() {
       azurePat: parsedConfig.azurePat || '',
       startDate: '',
       endDate: '',
+      autoFillFromExternal: parsedConfig.autoFillFromExternal ?? true,
     };
   });
 
@@ -78,6 +79,10 @@ export default function App() {
     }
     return undefined;
   });
+
+  // Work items cached from the last generate call
+  const [allCommits, setAllCommits] = useState<any[]>([]);
+  const [allTasks, setAllTasks] = useState<any[]>([]);
 
   // ============================================================================
   // EFFECT HOOKS - Side effects grouped by purpose
@@ -199,6 +204,7 @@ export default function App() {
         azurePat: '',
         startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
         endDate: format(new Date(), 'yyyy-MM-dd'),
+        autoFillFromExternal: true,
       });
     }
   };
@@ -235,9 +241,31 @@ export default function App() {
         jiraToken: jiraToken || undefined,
       };
 
-      const { records: newRecords, jiraTokenExpired: expired } =
-        await generateTimesheetData(configWithTokens);
-      setRecords({ records: newRecords, jiraTokenExpired: expired });
+      const result = await generateTimesheetData(configWithTokens);
+
+      // Transform raw commits into WorkItems for the selector panel
+      const commitsAsWorkItems = result.allCommits.map((c: any, idx: number) => ({
+        id: `ado-${idx}`,
+        source: 'azure' as const,
+        label: c.repoName || '',
+        text: c.comment || '',
+        date: new Date(c.author.date),
+        repoName: c.repoName,
+        projectName: c.projectName,
+      }));
+
+      // Transform raw tasks into WorkItems
+      const tasksAsWorkItems = result.allTasks.map((t: any, idx: number) => ({
+        id: `jira-${idx}`,
+        source: 'jira' as const,
+        label: `[${t.key}]`,
+        text: t.fields?.summary || '',
+        date: new Date(t.fields?.updated),
+      }));
+
+      setAllCommits(commitsAsWorkItems);
+      setAllTasks(tasksAsWorkItems);
+      setRecords({ records: result.records, jiraTokenExpired: result.jiraTokenExpired });
     } catch (e: any) {
       alert(`Terjadi kesalahan: ${e.message || 'Gagal memproses data.'}`);
     } finally {
@@ -257,6 +285,18 @@ export default function App() {
       employeeInfo,
       signatureData
     );
+  };
+
+  const handleAddWork = (text: string, recordIndex: number) => {
+    const record = records.records[recordIndex];
+    if (!record) return;
+    const existing = record.editableActivity || '';
+    const newActivity = existing ? `${existing}\n${text}` : text;
+    setRecords((prev) => {
+      const newRecords = [...prev.records];
+      newRecords[recordIndex] = { ...newRecords[recordIndex], editableActivity: newActivity };
+      return { ...prev, records: newRecords };
+    });
   };
 
   // ============================================================================
@@ -359,6 +399,9 @@ export default function App() {
                 signatureData
               )
             }
+            allCommits={allCommits}
+            allTasks={allTasks}
+            onAddWork={handleAddWork}
           />
         )}
 

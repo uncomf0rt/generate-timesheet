@@ -74,7 +74,7 @@ Terimakasih atas perhatian dan waktunya.
 Best regards,
 ${nama}`;
     },
-    [employeeInfo, startDate, endDate]
+    [employeeInfo, startDate, endDate, formatDate]
   );
 
   // Load from localStorage on mount
@@ -130,7 +130,14 @@ ${nama}`;
       'Tgl Mulai': formatDate(startDate),
       'Tgl Selesai': formatDate(endDate),
     }),
-    [employeeInfo.diketahuiOleh, employeeInfo.disetujuiOleh, employeeInfo.nama, startDate, endDate]
+    [
+      employeeInfo.diketahuiOleh,
+      employeeInfo.disetujuiOleh,
+      employeeInfo.nama,
+      startDate,
+      endDate,
+      formatDate,
+    ]
   );
 
   const insertAtCursor = (ref: React.RefObject<HTMLTextAreaElement | null>, text: string) => {

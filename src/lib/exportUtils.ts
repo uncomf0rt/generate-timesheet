@@ -491,7 +491,7 @@ export function exportToPDF(
   const signatureTopY = summaryTopY + summaryRowHeight * 4 + 6;
 
   // Column positions for signature (using column centers)
-  const colNik = margin;
+  const _colNik = margin;
   const colNama = margin + colWidthsMm[0];
   const colJamMasuk = colNama + colWidthsMm[1];
   const colJamPulang = colJamMasuk + colWidthsMm[2] + colWidthsMm[3];
@@ -543,8 +543,8 @@ export function exportToPDF(
 
 export async function generatePDFBlob(
   records: DayRecord[],
-  startDateStr: string,
-  endDateStr: string,
+  _startDateStr: string,
+  _endDateStr: string,
   employeeInfo: EmployeeInfo,
   signatureData?: SignatureData
 ): Promise<string> {
@@ -701,7 +701,7 @@ export async function generatePDFBlob(
   // ============================================================
   const signatureTopY = summaryTopY + summaryRowHeight * 4 + 6;
 
-  const colNik = margin;
+  const _colNik = margin;
   const colNama = margin + colWidthsMm[0];
   const colJamMasuk = colNama + colWidthsMm[1];
   const colJamPulang = colJamMasuk + colWidthsMm[2] + colWidthsMm[3];

@@ -8,6 +8,7 @@ import { DayRecord, EmployeeInfo, SignatureData } from '@/lib/types';
 import { CalendarGrid } from './CalendarGrid';
 import { DayDetailPanel } from './DayDetailPanel';
 import { ResultTable } from './ResultTable';
+import { WorkItem, WorkSelectorPanel } from './WorkSelectorPanel';
 
 interface Props {
   records: DayRecord[];
@@ -19,6 +20,9 @@ interface Props {
   signatureData?: SignatureData;
   onExportExcel: () => void;
   onExportPDF: () => void;
+  allCommits: WorkItem[];
+  allTasks: WorkItem[];
+  onAddWork: (text: string, recordIndex: number) => void;
 }
 
 export const PreviewSection: React.FC<Props> = ({
@@ -31,6 +35,9 @@ export const PreviewSection: React.FC<Props> = ({
   signatureData,
   onExportExcel,
   onExportPDF,
+  allCommits,
+  allTasks,
+  onAddWork,
 }) => {
   const [activeTab, setActiveTab] = useState<'list' | 'calendar'>('list');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(() => {
@@ -72,7 +79,7 @@ export const PreviewSection: React.FC<Props> = ({
     }, 2000); // 2 second debounce
 
     return () => clearTimeout(timeoutId);
-  }, [records, configStartDate, configEndDate, employeeInfo, signatureData]);
+  }, [refreshPDFPreview]);
 
   useEffect(() => {
     return () => {
@@ -177,11 +184,16 @@ export const PreviewSection: React.FC<Props> = ({
 
       {/* Tab Content */}
       {activeTab === 'list' ? (
-        <ResultTable records={records} onUpdateRecord={onUpdateRecord} />
+        <ResultTable
+          records={records}
+          onUpdateRecord={onUpdateRecord}
+          allCommits={allCommits}
+          allTasks={allTasks}
+        />
       ) : (
         <div className="flex flex-col lg:flex-row gap-8 min-h-[500px]">
           {/* Left: Calendar */}
-          <div className="w-full lg:w-2/5 bg-[#FAFAF8] rounded-3xl border border-[#E5E2D9] p-6">
+          <div className="w-full lg:w-[38%] bg-[#FAFAF8] rounded-3xl border border-[#E5E2D9] p-6">
             <CalendarGrid
               selectedDate={selectedCalendarDate}
               records={records}
@@ -189,14 +201,34 @@ export const PreviewSection: React.FC<Props> = ({
             />
           </div>
 
-          {/* Right: Day Detail */}
-          <div className="w-full lg:w-3/5 bg-[#FAFAF8] rounded-3xl border border-[#E5E2D9] p-6">
+          {/* Center: Day Detail */}
+          <div className="w-full lg:w-[38%] bg-[#FAFAF8] rounded-3xl border border-[#E5E2D9] p-6">
             <DayDetailPanel
               selectedDate={selectedCalendarDate}
               records={records}
               onUpdateRecord={onUpdateRecord}
+              allCommits={allCommits}
+              allTasks={allTasks}
+              onAddWork={onAddWork}
+              configStartDate={configStartDate}
+              configEndDate={configEndDate}
             />
           </div>
+
+          {/* Right: Sticky Work Selector — hidden on small screens, handled by WorkSelectorPanel */}
+          <WorkSelectorPanel
+            allCommits={allCommits}
+            allTasks={allTasks}
+            recordIndex={records.findIndex((r) =>
+              selectedCalendarDate
+                ? r.date.toDateString() === selectedCalendarDate.toDateString()
+                : false
+            )}
+            records={records}
+            onAddWork={onAddWork}
+            configStartDate={configStartDate}
+            configEndDate={configEndDate}
+          />
         </div>
       )}
     </div>
