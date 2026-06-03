@@ -1,13 +1,12 @@
 'use client';
 import { format, parseISO, subDays } from 'date-fns';
-import { id } from 'date-fns/locale';
-import { DownloadCloud, FileText, HelpCircle, X } from 'lucide-react';
+import { HelpCircle, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import EmailTemplateSection from '@/components/EmailTemplateSection';
 import { HelpPanel } from '@/components/HelpPanel';
 import { OAuthCallback } from '@/components/OAuthCallback';
-import { ResultTable } from '@/components/ResultTable';
+import { PreviewSection } from '@/components/PreviewSection';
 import { SignatureInput } from '@/components/SignatureInput';
 import * as api from '@/lib/api';
 import { exportToPDF, generateTemplateExcel } from '@/lib/exportUtils';
@@ -59,7 +58,7 @@ export default function App() {
   });
   const [loading, setLoading] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [forceEmployeeFormOpen, setForceEmployeeFormOpen] = useState(0);
+  const [forceEmployeeFormOpen, _setForceEmployeeFormOpen] = useState(0);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
 
   // Employee info state
@@ -342,55 +341,25 @@ export default function App() {
 
         {/* Results */}
         {records.records.length > 0 && (
-          <div className="bg-white rounded-[40px] border border-[#E5E2D9] shadow-sm p-8 md:p-10 space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-center border-b border-[#E5E2D9] pb-6 gap-6">
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full">
-                <div>
-                  <h2 className="text-2xl font-serif italic text-[#3E3D39]">Preview Timesheet</h2>
-                  <p className="text-xs uppercase tracking-widest text-[#9A958A] mt-2 font-semibold">
-                    {format(parseISO(config.startDate), 'dd MMM yyyy', {
-                      locale: id,
-                    })}{' '}
-                    -{' '}
-                    {format(parseISO(config.endDate), 'dd MMM yyyy', {
-                      locale: id,
-                    })}
-                  </p>
-                </div>
-                {records.jiraTokenExpired && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2 text-xs text-amber-700">
-                    Jira token expired. Please reconnect to include tasks.
-                  </div>
-                )}
-              </div>
-              <div className="h-10 flex flex-wrap items-center gap-4 shrink-0">
-                <button
-                  onClick={handleExport}
-                  className="h-full px-6 bg-white rounded-full border border-[#E5E2D9] text-xs font-bold uppercase tracking-wider text-[#5A6355] shadow-sm flex items-center gap-2 hover:bg-[#F8F7F3] transition-colors"
-                >
-                  <DownloadCloud className="w-4 h-4 text-[#B8865D]" />
-                  Export Excel (.xlsx)
-                </button>
-                <button
-                  onClick={() =>
-                    exportToPDF(
-                      records.records,
-                      config.startDate,
-                      config.endDate,
-                      employeeInfo,
-                      signatureData
-                    )
-                  }
-                  className="h-full px-6 bg-[#5A6355] text-[#F8F7F3] rounded-full text-xs font-bold uppercase tracking-wider shadow-md flex items-center gap-2 hover:bg-[#4A5246] transition-colors"
-                >
-                  <FileText className="w-4 h-4" />
-                  Export PDF
-                </button>
-              </div>
-            </div>
-
-            <ResultTable records={records.records} onUpdateRecord={handleUpdateRecord} />
-          </div>
+          <PreviewSection
+            records={records.records}
+            onUpdateRecord={handleUpdateRecord}
+            configStartDate={config.startDate}
+            configEndDate={config.endDate}
+            jiraTokenExpired={records.jiraTokenExpired}
+            employeeInfo={employeeInfo}
+            signatureData={signatureData}
+            onExportExcel={handleExport}
+            onExportPDF={() =>
+              exportToPDF(
+                records.records,
+                config.startDate,
+                config.endDate,
+                employeeInfo,
+                signatureData
+              )
+            }
+          />
         )}
 
         {/* Signature Input Modal */}

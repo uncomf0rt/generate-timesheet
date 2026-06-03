@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 
-const API_BASE = 'https://libur.deno.dev/api';
+const API_BASE = 'https://api-hari-libur.vercel.app/api';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -14,9 +14,14 @@ export async function GET(req: NextRequest) {
 
     const url = `${API_BASE}${params.toString() ? `?${params.toString()}` : ''}`;
     const response = await fetch(url);
-    const data = await response.json();
+    const json = await response.json();
 
-    return Response.json(data);
+    const rawData = Array.isArray(json) ? json : (json?.data ?? []);
+    const filteredData = rawData.filter(
+      (item: { description: string }) => !item.description.startsWith('Cuti Bersama')
+    );
+
+    return Response.json(filteredData);
   } catch {
     return Response.json([]);
   }
