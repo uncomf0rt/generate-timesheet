@@ -16,12 +16,12 @@ src/
 
 | Command | Purpose |
 |---------|---------|
-| `npm run dev` | Start Next.js development server |
-| `npm run build` | Create production build |
-| `npm start` | Run production server |
-| `npm run check` | Run Biome check and format |
-| `npm run lint` | Run Biome linter |
-| `npm run format` | Run Biome formatter |
+| `bun run dev` | Start Next.js development server |
+| `bun run build` | Create production build |
+| `bun start` | Run production server |
+| `bun run check` | Run Biome check and format |
+| `bun run lint` | Run Biome linter |
+| `bun run format` | Run Biome formatter |
 
 ## Coding Style
 
@@ -35,7 +35,7 @@ src/
 
 ## Testing
 
-No test framework is currently configured. Validate changes manually using `npm run dev` and verify with `npm run check`.
+No test framework is currently configured. Validate changes manually using `bun run dev` and verify with `bun run check`.
 
 ## Commit Conventions
 
@@ -50,6 +50,6 @@ chore:   Tooling or configuration
 ## Pull Request Guidelines
 
 - Title format: `type: short description`
-- All Biome checks must pass (`npm run check`)
+- All Biome checks must pass (`bun run check`)
 - Link related issues in the PR description
 - Screenshots welcome for UI changes

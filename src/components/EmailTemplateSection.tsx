@@ -29,10 +29,10 @@ const EmailTemplateSection: React.FC<Props> = ({ employeeInfo, startDate, endDat
   const textarea1Ref = useRef<HTMLTextAreaElement>(null);
   const textarea2Ref = useRef<HTMLTextAreaElement>(null);
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = useCallback((dateStr: string) => {
     if (!dateStr) return '';
     return format(parseISO(dateStr), 'd MMMM yyyy', { locale: id });
-  };
+  }, []);
 
   const computeSyncHash = useCallback(() => {
     return `${employeeInfo.diketahuiOleh}|${employeeInfo.disetujuiOleh}|${employeeInfo.nama}|${startDate}|${endDate}`;

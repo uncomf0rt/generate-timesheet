@@ -2,7 +2,7 @@
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Loader2, RefreshCw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { generatePDFBlob } from '@/lib/exportUtils';
 import { DayRecord, EmployeeInfo, SignatureData } from '@/lib/types';
 import { CalendarGrid } from './CalendarGrid';
@@ -53,12 +53,13 @@ export const PreviewSection: React.FC<Props> = ({
   });
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const pdfPreviewUrlRef = useRef<string | null>(null);
 
-  const refreshPDFPreview = async () => {
+  const refreshPDFPreview = useCallback(async () => {
     setIsGeneratingPreview(true);
     try {
-      if (pdfPreviewUrl) {
-        URL.revokeObjectURL(pdfPreviewUrl);
+      if (pdfPreviewUrlRef.current) {
+        URL.revokeObjectURL(pdfPreviewUrlRef.current);
       }
       const url = await generatePDFBlob(
         records,
@@ -67,11 +68,12 @@ export const PreviewSection: React.FC<Props> = ({
         employeeInfo,
         signatureData
       );
+      pdfPreviewUrlRef.current = url;
       setPdfPreviewUrl(url);
     } finally {
       setIsGeneratingPreview(false);
     }
-  };
+  }, [records, configStartDate, configEndDate, employeeInfo, signatureData]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -83,11 +85,11 @@ export const PreviewSection: React.FC<Props> = ({
 
   useEffect(() => {
     return () => {
-      if (pdfPreviewUrl) {
-        URL.revokeObjectURL(pdfPreviewUrl);
+      if (pdfPreviewUrlRef.current) {
+        URL.revokeObjectURL(pdfPreviewUrlRef.current);
       }
     };
-  }, [pdfPreviewUrl]);
+  }, []);
 
   return (
     <div className="bg-white rounded-[40px] border border-[#E5E2D9] shadow-sm p-8 md:p-10 space-y-8">
