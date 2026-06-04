@@ -270,7 +270,7 @@ export const WorkSelectorPanel: React.FC<Props> = ({
     <>
       {/* Desktop sticky panel */}
       <div className="hidden lg:block w-80 shrink-0">
-        <div className="sticky top-8 bg-white rounded-3xl border border-[#E5E2D9] shadow-sm p-5 max-h-[calc(100vh-6rem)] overflow-hidden flex flex-col">
+        <div className="sticky top-8 bg-white rounded-3xl border border-[#E5E2D9] shadow-sm p-5 max-h-[calc(100vh-6rem)] overflow-y-auto flex flex-col">
           {panelContent}
         </div>
       </div>
