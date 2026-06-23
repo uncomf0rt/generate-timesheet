@@ -193,9 +193,9 @@ export const PreviewSection: React.FC<Props> = ({
           allTasks={allTasks}
         />
       ) : (
-        <div className="flex flex-col lg:flex-row gap-8 min-h-[500px]">
+        <div className="flex flex-col lg:flex-row gap-8 min-h-125">
           {/* Left: Calendar */}
-          <div className="w-full lg:w-[38%] bg-[#FAFAF8] rounded-3xl border border-[#E5E2D9] p-6">
+          <div className="w-full lg:w-[38%] bg-[#FAFAF8] rounded-3xl border border-[#E5E2D9] p-6 max-h-[600px] overflow-auto">
             <CalendarGrid
               selectedDate={selectedCalendarDate}
               records={records}
@@ -204,7 +204,7 @@ export const PreviewSection: React.FC<Props> = ({
           </div>
 
           {/* Center: Day Detail */}
-          <div className="w-full lg:w-[38%] bg-[#FAFAF8] rounded-3xl border border-[#E5E2D9] p-6">
+          <div className="w-full lg:w-[38%] bg-[#FAFAF8] rounded-3xl border border-[#E5E2D9] p-6 max-h-[600px] overflow-auto">
             <DayDetailPanel
               selectedDate={selectedCalendarDate}
               records={records}
