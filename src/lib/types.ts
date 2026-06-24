@@ -20,6 +20,7 @@ export interface Config {
   startDate: string;
   endDate: string;
   jiraToken?: OAuthToken;
+  autoFillFromExternal: boolean;
 }
 
 export type KeteranganType = 'Hari kerja' | 'Libur' | 'Sakit' | 'Izin' | 'Cuti';

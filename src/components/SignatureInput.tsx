@@ -53,39 +53,54 @@ export function SignatureInput({
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }, [isOpen]);
 
-  const getMousePos = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-  }, []);
+  const getPos = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return { x: 0, y: 0 };
+      const rect = canvas.getBoundingClientRect();
+      if ('touches' in e && e.touches.length > 0) {
+        return {
+          x: e.touches[0].clientX - rect.left,
+          y: e.touches[0].clientY - rect.top,
+        };
+      }
+      return {
+        x: (e as React.MouseEvent<HTMLCanvasElement>).clientX - rect.left,
+        y: (e as React.MouseEvent<HTMLCanvasElement>).clientY - rect.top,
+      };
+    },
+    []
+  );
 
   const startDrawing = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+      if ('touches' in e) {
+        e.preventDefault();
+      }
       isDrawingRef.current = true;
-      lastPosRef.current = getMousePos(e);
+      lastPosRef.current = getPos(e);
     },
-    [getMousePos]
+    [getPos]
   );
 
   const draw = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
       if (!isDrawingRef.current) return;
+      if ('touches' in e) {
+        e.preventDefault();
+      }
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       if (!ctx) return;
 
-      const currentPos = getMousePos(e);
+      const currentPos = getPos(e);
       ctx.beginPath();
       ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y);
       ctx.lineTo(currentPos.x, currentPos.y);
       ctx.stroke();
       lastPosRef.current = currentPos;
     },
-    [getMousePos]
+    [getPos]
   );
 
   const stopDrawing = useCallback(() => {
@@ -185,6 +200,9 @@ export function SignatureInput({
                 onMouseMove={draw}
                 onMouseUp={stopDrawing}
                 onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
               />
               <button
                 onClick={clearCanvas}

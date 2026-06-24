@@ -29,10 +29,10 @@ const EmailTemplateSection: React.FC<Props> = ({ employeeInfo, startDate, endDat
   const textarea1Ref = useRef<HTMLTextAreaElement>(null);
   const textarea2Ref = useRef<HTMLTextAreaElement>(null);
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = useCallback((dateStr: string) => {
     if (!dateStr) return '';
     return format(parseISO(dateStr), 'd MMMM yyyy', { locale: id });
-  };
+  }, []);
 
   const computeSyncHash = useCallback(() => {
     return `${employeeInfo.diketahuiOleh}|${employeeInfo.disetujuiOleh}|${employeeInfo.nama}|${startDate}|${endDate}`;
@@ -74,7 +74,7 @@ Terimakasih atas perhatian dan waktunya.
 Best regards,
 ${nama}`;
     },
-    [employeeInfo, startDate, endDate]
+    [employeeInfo, startDate, endDate, formatDate]
   );
 
   // Load from localStorage on mount
@@ -130,7 +130,14 @@ ${nama}`;
       'Tgl Mulai': formatDate(startDate),
       'Tgl Selesai': formatDate(endDate),
     }),
-    [employeeInfo.diketahuiOleh, employeeInfo.disetujuiOleh, employeeInfo.nama, startDate, endDate]
+    [
+      employeeInfo.diketahuiOleh,
+      employeeInfo.disetujuiOleh,
+      employeeInfo.nama,
+      startDate,
+      endDate,
+      formatDate,
+    ]
   );
 
   const insertAtCursor = (ref: React.RefObject<HTMLTextAreaElement | null>, text: string) => {

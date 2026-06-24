@@ -10,9 +10,12 @@ import {
 import { getAdoCommits, getAdoRepos, getHolidays, getJiraTasks } from './api';
 import { Config, DayRecord } from './types';
 
-export async function generateTimesheetData(
-  config: Config
-): Promise<{ records: DayRecord[]; jiraTokenExpired: boolean }> {
+export async function generateTimesheetData(config: Config): Promise<{
+  records: DayRecord[];
+  jiraTokenExpired: boolean;
+  allCommits: any[];
+  allTasks: any[];
+}> {
   const startDate = startOfDay(parseISO(config.startDate));
   const endDate = endOfDay(parseISO(config.endDate));
 
@@ -105,7 +108,8 @@ export async function generateTimesheetData(
     // Check if it's a holiday
     const dayStr = format(day, 'yyyy-MM-dd');
     const holidayInfo = holidaysData.find((h: any) => h.date === dayStr);
-    const isHoliday = holidayInfo?.is_national_holiday === true;
+    // New API returns {date, description} - any found entry means it's a holiday
+    const isHoliday = !!holidayInfo;
 
     const isDayOff = isWeekend || isHoliday;
 
@@ -121,15 +125,18 @@ export async function generateTimesheetData(
       .filter((t: any) => t.fields?.updated && isSameDay(new Date(t.fields.updated), day))
       .map((t: any) => `[${t.key}] ${t.fields?.summary || ''}`);
 
+    const shouldAutoFill = config.autoFillFromExternal !== false; // default true for backwards compat
+    const autoActivity = shouldAutoFill ? [...dayTasks, ...dayCommits].join('\n') : '';
+
     return {
       date: day,
       isWeekend,
       isHoliday,
-      holidayName: holidayInfo?.name,
+      holidayName: holidayInfo?.description,
       status: isDayOff ? 'Libur' : 'Hari kerja',
-      commits: dayCommits,
-      tasks: dayTasks,
-      editableActivity: [...dayTasks, ...dayCommits].join('\n'),
+      commits: shouldAutoFill ? dayCommits : [],
+      tasks: shouldAutoFill ? dayTasks : [],
+      editableActivity: autoActivity,
       jamMulai: isDayOff ? '' : '08:00',
       jamBerakhir: isDayOff ? '' : '17:00',
     };
@@ -138,5 +145,7 @@ export async function generateTimesheetData(
   return {
     records,
     jiraTokenExpired,
+    allCommits,
+    allTasks,
   };
 }
