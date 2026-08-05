@@ -100,6 +100,7 @@ export async function generateTemplateExcel(
     const rowData = {
       nik: employeeInfo.nik,
       nama: employeeInfo.nama,
+      tanggal: format(record.date, 'dd MMM yyyy', { locale: id }),
       jamMulai: record.jamMulai || '',
       jamBerakhir: record.jamBerakhir || '',
       durasi: record.jamMulai && record.jamBerakhir ? durasiHours : '',
@@ -109,17 +110,12 @@ export async function generateTemplateExcel(
       // plain "Libur" — strip the holiday-name suffix that getStatusLabel adds.
       // PDF still uses getStatusLabel so its Keterangan column keeps detail.
       keterangan:
-        record.status === 'Hari kerja'
-          ? ''
-          : record.status === 'Libur'
-            ? 'Libur'
-            : record.status,
+        record.status === 'Hari kerja' ? '' : record.status === 'Libur' ? 'Libur' : record.status,
     };
 
     sheet.getCell(`B${rowNum}`).value = rowData.nik;
     sheet.getCell(`C${rowNum}`).value = rowData.nama;
-    sheet.getCell(`D${rowNum}`).value = record.date;
-    sheet.getCell(`D${rowNum}`).numFmt = 'dd mmm yyyy';
+    sheet.getCell(`D${rowNum}`).value = rowData.tanggal;
     sheet.getCell(`E${rowNum}`).value = rowData.jamMulai;
     sheet.getCell(`F${rowNum}`).value = rowData.jamBerakhir;
     sheet.getCell(`G${rowNum}`).value = rowData.durasi;
@@ -160,8 +156,7 @@ export async function generateTemplateExcel(
   // strip the formula ("Removed Records: Formula") if locale/format
   // mismatches cause a parse failure.
   // Total hari kerja = total days with Tanggal − rows whose Keterangan Lainnya = "Libur"
-  const totalHariKerja =
-    records.length - records.filter((r) => r.status === 'Libur').length;
+  const totalHariKerja = records.length - records.filter((r) => r.status === 'Libur').length;
   // Total kehadiran hari libur = Libur rows with jamMulai/jamBerakhir filled (overtime on holiday/weekend)
   const totalKehadiranHariLibur = records.filter(
     (r) => r.status === 'Libur' && r.jamMulai && r.jamBerakhir
@@ -293,8 +288,12 @@ export async function generateTemplateExcel(
   // ============================================================
   // SAVE
   // ============================================================
-  const startFormatted = format(parseISO(startDateStr), 'dd-MMM-yyyy', { locale: id });
-  const endFormatted = format(parseISO(endDateStr), 'dd-MMM-yyyy', { locale: id });
+  // Use actual first/last record dates so the filename always matches
+  // the data, bypassing any parseISO timezone ambiguity.
+  const actualStart = records.length > 0 ? records[0].date : parseISO(startDateStr);
+  const actualEnd = records.length > 0 ? records[records.length - 1].date : parseISO(endDateStr);
+  const startFormatted = format(actualStart, 'dd-MMM-yyyy', { locale: id });
+  const endFormatted = format(actualEnd, 'dd-MMM-yyyy', { locale: id });
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
@@ -363,8 +362,10 @@ export async function exportToExcel(
   sheet.getRow(1).font = { bold: true };
   sheet.getRow(1).alignment = { horizontal: 'center' };
 
-  const startFormatted = format(parseISO(startDateStr), 'dd-MMM-yyyy', { locale: id });
-  const endFormatted = format(parseISO(endDateStr), 'dd-MMM-yyyy', { locale: id });
+  const actualStart = records.length > 0 ? records[0].date : parseISO(startDateStr);
+  const actualEnd = records.length > 0 ? records[records.length - 1].date : parseISO(endDateStr);
+  const startFormatted = format(actualStart, 'dd-MMM-yyyy', { locale: id });
+  const endFormatted = format(actualEnd, 'dd-MMM-yyyy', { locale: id });
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
@@ -586,8 +587,10 @@ export function exportToPDF(
   // ============================================================
   // SAVE
   // ============================================================
-  const fileStartFormatted = format(parseISO(startDateStr), 'dd-MMM-yyyy', { locale: id });
-  const fileEndFormatted = format(parseISO(endDateStr), 'dd-MMM-yyyy', { locale: id });
+  const actualStart = records.length > 0 ? records[0].date : parseISO(startDateStr);
+  const actualEnd = records.length > 0 ? records[records.length - 1].date : parseISO(endDateStr);
+  const fileStartFormatted = format(actualStart, 'dd-MMM-yyyy', { locale: id });
+  const fileEndFormatted = format(actualEnd, 'dd-MMM-yyyy', { locale: id });
   doc.save(`Timesheet_${fileStartFormatted}_to_${fileEndFormatted}.pdf`);
 }
 
