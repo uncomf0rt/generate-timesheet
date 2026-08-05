@@ -1,12 +1,4 @@
-import {
-  eachDayOfInterval,
-  endOfDay,
-  format,
-  isWeekend as isDateWeekend,
-  isSameDay,
-  parseISO,
-  startOfDay,
-} from 'date-fns';
+import { eachDayOfInterval, format, isWeekend as isDateWeekend, isSameDay } from 'date-fns';
 import { getAdoCommits, getAdoRepos, getHolidays, getJiraTasks } from './api';
 import { Config, DayRecord } from './types';
 
@@ -16,11 +8,15 @@ export async function generateTimesheetData(config: Config): Promise<{
   allCommits: any[];
   allTasks: any[];
 }> {
-  const startDate = startOfDay(parseISO(config.startDate));
-  const endDate = endOfDay(parseISO(config.endDate));
+  // Parse as local dates explicitly — splitting avoids parseISO treating
+  // the string as UTC and shifting the date by the timezone offset.
+  const [sy, sm, sd] = config.startDate.split('-').map(Number);
+  const [ey, em, ed] = config.endDate.split('-').map(Number);
+  const startDate = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+  const endDate = new Date(ey, em - 1, ed, 23, 59, 59, 999);
 
   const fromIso = startDate.toISOString();
-  // Include the whole end date
+  // Include the whole end date (local 23:59:59 → UTC next day, so API sees full July 25)
   const toIso = endDate.toISOString();
 
   // 1. Gather Dates & Holidays

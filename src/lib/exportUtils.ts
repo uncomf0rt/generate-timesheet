@@ -88,7 +88,6 @@ export async function generateTemplateExcel(
     const rowNum = DATA_START_ROW + i;
     const isLeave = isLeaveType(record.status);
 
-    const dateStr = format(record.date, 'dd MMM yyyy', { locale: id });
     const cellActivity =
       record.editableActivity !== undefined
         ? record.editableActivity
@@ -101,13 +100,17 @@ export async function generateTemplateExcel(
     const rowData = {
       nik: employeeInfo.nik,
       nama: employeeInfo.nama,
-      tanggal: dateStr,
+      tanggal: format(record.date, 'dd MMM yyyy', { locale: id }),
       jamMulai: record.jamMulai || '',
       jamBerakhir: record.jamBerakhir || '',
       durasi: record.jamMulai && record.jamBerakhir ? durasiHours : '',
-      deskripsi: isLeave ? '' : cellActivity || '',
-      atasan: employeeInfo.diketahuiOleh,
-      keterangan: record.status === 'Hari kerja' ? '' : getStatusLabel(record),
+      deskripsi: cellActivity || '',
+      atasan: employeeInfo.disetujuiOleh,
+      // Excel-only: any Libur record (including national holidays) shows as
+      // plain "Libur" — strip the holiday-name suffix that getStatusLabel adds.
+      // PDF still uses getStatusLabel so its Keterangan column keeps detail.
+      keterangan:
+        record.status === 'Hari kerja' ? '' : record.status === 'Libur' ? 'Libur' : record.status,
     };
 
     sheet.getCell(`B${rowNum}`).value = rowData.nik;
@@ -147,9 +150,13 @@ export async function generateTemplateExcel(
   // ============================================================
   const summaryStartRow = dataEndRow + 2;
 
-  // Compute summary values directly (no formulas)
-  // Total hari kerja = count of normal work days
-  const totalHariKerja = records.filter((r) => r.status === 'Hari kerja').length;
+  // Compute static summary values for cells that don't use a formula.
+  // We also cache the JS-computed values so each formula cell carries a
+  // `result` fallback — without it, Excel tries to recalc on open and may
+  // strip the formula ("Removed Records: Formula") if locale/format
+  // mismatches cause a parse failure.
+  // Total hari kerja = total days with Tanggal − rows whose Keterangan Lainnya = "Libur"
+  const totalHariKerja = records.length - records.filter((r) => r.status === 'Libur').length;
   // Total kehadiran hari libur = Libur rows with jamMulai/jamBerakhir filled (overtime on holiday/weekend)
   const totalKehadiranHariLibur = records.filter(
     (r) => r.status === 'Libur' && r.jamMulai && r.jamBerakhir
@@ -158,12 +165,22 @@ export async function generateTemplateExcel(
   const totalSakitIzinCuti = records.filter(
     (r) => r.status === 'Sakit' || r.status === 'Izin' || r.status === 'Cuti'
   ).length;
-  // Kehadiran = work days + overtime on holidays
-  const kehadiran = totalHariKerja + totalKehadiranHariLibur;
+  // Kehadiran = work days + overtime on holidays − leave days
+  const kehadiran = totalHariKerja + totalKehadiranHariLibur - totalSakitIzinCuti;
+
+  // Total hari kerja — Excel formula:
+  //   =COUNTA(Tanggal range) − COUNTIF(Keterangan Lainnya range,"Libur")
+  // COUNTA counts non-empty cells (works whether Tanggal is a number or text);
+  // COUNTIF uses comma as the argument separator (US/English-friendly — works
+  // in Indonesian Excel too since the criterion is the only quoted string).
+  const totalHariKerjaFormula = `COUNTA(D${DATA_START_ROW}:D${dataEndRow})-COUNTIF(J${DATA_START_ROW}:J${dataEndRow},"Libur")`;
 
   // Total hari kerja
   sheet.getCell(`B${summaryStartRow}`).value = 'Total hari kerja';
-  sheet.getCell(`D${summaryStartRow}`).value = totalHariKerja;
+  sheet.getCell(`D${summaryStartRow}`).value = {
+    formula: totalHariKerjaFormula,
+    result: totalHariKerja,
+  };
 
   // Total kehadiran hari libur
   sheet.getCell(`B${summaryStartRow + 1}`).value = 'Total kehadiran hari libur';
@@ -173,9 +190,13 @@ export async function generateTemplateExcel(
   sheet.getCell(`B${summaryStartRow + 2}`).value = 'Sakit/Izin/Cuti';
   sheet.getCell(`D${summaryStartRow + 2}`).value = totalSakitIzinCuti;
 
-  // Kehadiran
+  // Kehadiran — Excel formula: Total hari kerja + Total kehadiran hari libur − Sakit/Izin/Cuti
+  const kehadiranFormula = `D${summaryStartRow}+D${summaryStartRow + 1}-D${summaryStartRow + 2}`;
   sheet.getCell(`B${summaryStartRow + 3}`).value = 'Kehadiran';
-  sheet.getCell(`D${summaryStartRow + 3}`).value = kehadiran;
+  sheet.getCell(`D${summaryStartRow + 3}`).value = {
+    formula: kehadiranFormula,
+    result: kehadiran,
+  };
 
   // ============================================================
   // SIGNATURE SECTION
@@ -185,10 +206,10 @@ export async function generateTemplateExcel(
   // Headers: Dibuat oleh | Diketahui oleh | Disetujui oleh
   sheet.getCell(`C${signatureStartRow}`).value = 'Dibuat oleh';
   sheet.getCell(`C${signatureStartRow}`).alignment = { vertical: 'middle' };
-  sheet.getCell(`H${signatureStartRow}`).value = 'Diketahui oleh';
-  sheet.getCell(`H${signatureStartRow}`).alignment = { vertical: 'middle' };
-  sheet.getCell(`J${signatureStartRow}`).value = 'Disetujui oleh';
-  sheet.getCell(`J${signatureStartRow}`).alignment = { vertical: 'middle' };
+  sheet.getCell(`F${signatureStartRow}`).value = 'Diketahui oleh';
+  sheet.getCell(`F${signatureStartRow}`).alignment = { vertical: 'middle' };
+  sheet.getCell(`I${signatureStartRow}`).value = 'Disetujui oleh';
+  sheet.getCell(`I${signatureStartRow}`).alignment = { vertical: 'middle' };
 
   // Signature image for "Dibuat oleh" if available
   if (signatureData?.imageData) {
@@ -212,10 +233,10 @@ export async function generateTemplateExcel(
   const nameRow = signatureStartRow + 5;
   sheet.getCell(`C${nameRow}`).value = employeeInfo.nama;
   sheet.getCell(`C${nameRow}`).alignment = { vertical: 'middle' };
-  sheet.getCell(`H${nameRow}`).value = employeeInfo.diketahuiOleh;
-  sheet.getCell(`H${nameRow}`).alignment = { vertical: 'middle' };
-  sheet.getCell(`J${nameRow}`).value = employeeInfo.disetujuiOleh;
-  sheet.getCell(`J${nameRow}`).alignment = { vertical: 'middle' };
+  sheet.getCell(`F${nameRow}`).value = employeeInfo.diketahuiOleh;
+  sheet.getCell(`F${nameRow}`).alignment = { vertical: 'middle' };
+  sheet.getCell(`I${nameRow}`).value = employeeInfo.disetujuiOleh;
+  sheet.getCell(`I${nameRow}`).alignment = { vertical: 'middle' };
 
   // ============================================================
   // HOLIDAY SHEET
@@ -241,10 +262,38 @@ export async function generateTemplateExcel(
   });
 
   // ============================================================
+  // PAGE SETUP — ensures Excel's "Save as PDF" / Print renders
+  // all 9 columns on a single landscape A4 page wide.
+  // ============================================================
+  const printEndRow = nameRow + 1;
+  sheet.pageSetup = {
+    orientation: 'landscape',
+    paperSize: 9, // A4
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0, // 0 = unlimited pages tall (rows can flow)
+    margins: {
+      left: 0.3,
+      right: 0.3,
+      top: 0.4,
+      bottom: 0.4,
+      header: 0.2,
+      footer: 0.2,
+    },
+    printArea: `B1:J${printEndRow}`,
+    horizontalCentered: false,
+    verticalCentered: false,
+  };
+
+  // ============================================================
   // SAVE
   // ============================================================
-  const startFormatted = format(parseISO(startDateStr), 'dd-MMM-yyyy', { locale: id });
-  const endFormatted = format(parseISO(endDateStr), 'dd-MMM-yyyy', { locale: id });
+  // Use actual first/last record dates so the filename always matches
+  // the data, bypassing any parseISO timezone ambiguity.
+  const actualStart = records.length > 0 ? records[0].date : parseISO(startDateStr);
+  const actualEnd = records.length > 0 ? records[records.length - 1].date : parseISO(endDateStr);
+  const startFormatted = format(actualStart, 'dd-MMM-yyyy', { locale: id });
+  const endFormatted = format(actualEnd, 'dd-MMM-yyyy', { locale: id });
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
@@ -313,8 +362,10 @@ export async function exportToExcel(
   sheet.getRow(1).font = { bold: true };
   sheet.getRow(1).alignment = { horizontal: 'center' };
 
-  const startFormatted = format(parseISO(startDateStr), 'dd-MMM-yyyy', { locale: id });
-  const endFormatted = format(parseISO(endDateStr), 'dd-MMM-yyyy', { locale: id });
+  const actualStart = records.length > 0 ? records[0].date : parseISO(startDateStr);
+  const actualEnd = records.length > 0 ? records[records.length - 1].date : parseISO(endDateStr);
+  const startFormatted = format(actualStart, 'dd-MMM-yyyy', { locale: id });
+  const endFormatted = format(actualEnd, 'dd-MMM-yyyy', { locale: id });
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
@@ -536,8 +587,10 @@ export function exportToPDF(
   // ============================================================
   // SAVE
   // ============================================================
-  const fileStartFormatted = format(parseISO(startDateStr), 'dd-MMM-yyyy', { locale: id });
-  const fileEndFormatted = format(parseISO(endDateStr), 'dd-MMM-yyyy', { locale: id });
+  const actualStart = records.length > 0 ? records[0].date : parseISO(startDateStr);
+  const actualEnd = records.length > 0 ? records[records.length - 1].date : parseISO(endDateStr);
+  const fileStartFormatted = format(actualStart, 'dd-MMM-yyyy', { locale: id });
+  const fileEndFormatted = format(actualEnd, 'dd-MMM-yyyy', { locale: id });
   doc.save(`Timesheet_${fileStartFormatted}_to_${fileEndFormatted}.pdf`);
 }
 
