@@ -19,6 +19,7 @@ interface Props {
   employeeInfo: EmployeeInfo;
   signatureData?: SignatureData;
   onExportExcel: () => void;
+  onExportWord: () => void;
   onExportPDF: () => void;
   allCommits: WorkItem[];
   allTasks: WorkItem[];
@@ -34,6 +35,7 @@ export const PreviewSection: React.FC<Props> = ({
   employeeInfo,
   signatureData,
   onExportExcel,
+  onExportWord,
   onExportPDF,
   allCommits,
   allTasks,
@@ -123,6 +125,12 @@ export const PreviewSection: React.FC<Props> = ({
           >
             <RefreshCw className={`w-4 h-4 ${isGeneratingPreview ? 'animate-spin' : ''}`} />
             Refresh Preview
+          </button>
+          <button
+            onClick={onExportWord}
+            className="h-full px-6 bg-white rounded-full border border-[#E5E2D9] text-xs font-bold uppercase tracking-wider text-[#5A6355] shadow-sm flex items-center gap-2 hover:bg-[#F8F7F3] transition-colors"
+          >
+            Export Word (.docx)
           </button>
           <button
             onClick={onExportExcel}

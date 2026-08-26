@@ -88,3 +88,11 @@ export function clearTokens(): void {
   localStorage.removeItem('azure_token');
   localStorage.removeItem('jira_token');
 }
+
+export function getJiraRedirectUri(): string {
+  if (process.env.JIRA_REDIRECT_URI) return process.env.JIRA_REDIRECT_URI;
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}/api/auth/jira/callback`;
+  }
+  return 'http://localhost:3000/api/auth/jira/callback';
+}
