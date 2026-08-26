@@ -3,16 +3,20 @@ import { format, subDays } from 'date-fns';
 import { HelpCircle, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import Swal from 'sweetalert2';
 import EmailTemplateSection from '@/components/EmailTemplateSection';
 import { HelpPanel } from '@/components/HelpPanel';
 import { OAuthCallback } from '@/components/OAuthCallback';
 import { PreviewSection } from '@/components/PreviewSection';
 import { SignatureInput } from '@/components/SignatureInput';
 import * as api from '@/lib/api';
-import { exportToPDF, generateTemplateExcel } from '@/lib/exportUtils';
+import { exportToPDF } from '@/lib/exportUtils';
 import { generateTimesheetData } from '@/lib/generator';
 import { clearTokens, retrieveTokens } from '@/lib/oauthUtils';
 import { Config, DayRecord, EmployeeInfo, OAuthToken, SignatureData } from '@/lib/types';
+import { getExcelExporter } from '@/modules/timesheet/exporters/excel';
+import { buildExportPayload, getWordExporter } from '@/modules/timesheet/exporters/word';
+import { loadKobusLogo } from '@/modules/timesheet/exporters/word/shared/adapter';
 
 const ConfigurationPanel = dynamic(() => import('@/components/ConfigurationPanel'), { ssr: false });
 
@@ -44,6 +48,7 @@ export default function App() {
       startDate: '',
       endDate: '',
       autoFillFromExternal: parsedConfig.autoFillFromExternal ?? true,
+      company: parsedConfig.company ?? 'ENIGMA',
     };
   });
 
@@ -66,9 +71,19 @@ export default function App() {
   const [employeeInfo, setEmployeeInfo] = useState<EmployeeInfo>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('timesheet-employee-info');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...parsed, consultantRole: parsed.consultantRole ?? '' };
+      }
     }
-    return { nik: '', nama: '', diketahuiOleh: '', disetujuiOleh: '' };
+    return {
+      company: 'ENIGMA',
+      nik: '',
+      nama: '',
+      consultantRole: '',
+      diketahuiOleh: '',
+      disetujuiOleh: '',
+    };
   });
 
   // Signature data state
@@ -205,18 +220,29 @@ export default function App() {
         startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
         endDate: format(new Date(), 'yyyy-MM-dd'),
         autoFillFromExternal: true,
+        company: 'ENIGMA',
       });
     }
   };
 
   const handleGenerate = async () => {
     if (!employeeInfo.nik || !employeeInfo.nama) {
-      alert('Harap lengkapi NIK dan Nama sebelum generate timesheet.');
+      await Swal.fire({
+        title: 'Data Tidak Lengkap',
+        text: 'Harap lengkapi NIK dan Nama sebelum generate timesheet.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
       return;
     }
 
     if (!config.adoOrg || !config.adoProject || !config.adoEmail || !config.azurePat) {
-      alert('Harap lengkapi semua isian Azure DevOps (Organization, Project, Email, dan PAT).');
+      await Swal.fire({
+        title: 'Data Tidak Lengkap',
+        text: 'Harap lengkapi semua isian Azure DevOps (Organization, Project, Email, dan PAT).',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
       return;
     }
 
@@ -225,12 +251,22 @@ export default function App() {
       .map((p) => p.trim())
       .filter(Boolean);
     if (projects.length === 0) {
-      alert('Harap pilih minimal satu Project.');
+      await Swal.fire({
+        title: 'Project Belum Dipilih',
+        text: 'Harap pilih minimal satu Project.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
       return;
     }
 
     if (new Date(config.startDate) > new Date(config.endDate)) {
-      alert('Tanggal Mulai tidak boleh lebih besar dari Tanggal Selesai.');
+      await Swal.fire({
+        title: 'Tanggal Tidak Valid',
+        text: 'Tanggal Mulai tidak boleh lebih besar dari Tanggal Selesai.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+      });
       return;
     }
 
@@ -267,7 +303,12 @@ export default function App() {
       setAllTasks(tasksAsWorkItems);
       setRecords({ records: result.records, jiraTokenExpired: result.jiraTokenExpired });
     } catch (e: any) {
-      alert(`Terjadi kesalahan: ${e.message || 'Gagal memproses data.'}`);
+      await Swal.fire({
+        title: 'Terjadi Kesalahan',
+        text: e.message || 'Gagal memproses data.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+      });
     } finally {
       setLoading(false);
     }
@@ -275,16 +316,62 @@ export default function App() {
 
   const handleExport = async () => {
     if (!employeeInfo.nik || !employeeInfo.nama) {
-      alert('Harap lengkapi NIK dan Nama sebelum export.');
+      await Swal.fire({
+        title: 'Data Tidak Lengkap',
+        text: 'Harap lengkapi NIK dan Nama sebelum export.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
       return;
     }
-    await generateTemplateExcel(
+    if (employeeInfo.company !== 'ENIGMA') {
+      await Swal.fire({
+        title: 'Tidak Tersedia',
+        text: 'Export Excel hanya tersedia untuk company ENIGMA.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+    const exporter = getExcelExporter(employeeInfo.company as 'ENIGMA');
+    await exporter.generate(
       records.records,
-      config.startDate,
-      config.endDate,
       employeeInfo,
-      signatureData
+      signatureData,
+      config.startDate,
+      config.endDate
     );
+  };
+
+  const handleExportWord = async () => {
+    if (!employeeInfo.nik || !employeeInfo.nama) {
+      await Swal.fire({
+        title: 'Data Tidak Lengkap',
+        text: 'Harap lengkapi NIK dan Nama sebelum export.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+    if (employeeInfo.company !== 'KOBUS') {
+      await Swal.fire({
+        title: 'Tidak Tersedia',
+        text: 'Export Word hanya tersedia untuk company KOBUS.',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+    const logo = await loadKobusLogo();
+    const exporter = getWordExporter('KOBUS');
+    const exportData = await buildExportPayload(
+      'KOBUS',
+      records.records,
+      employeeInfo,
+      logo,
+      signatureData?.imageData
+    );
+    await exporter.generate(exportData);
   };
 
   const handleAddWork = (text: string, recordIndex: number) => {
@@ -390,6 +477,7 @@ export default function App() {
             employeeInfo={employeeInfo}
             signatureData={signatureData}
             onExportExcel={handleExport}
+            onExportWord={handleExportWord}
             onExportPDF={() =>
               exportToPDF(
                 records.records,

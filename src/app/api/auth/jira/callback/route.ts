@@ -1,13 +1,7 @@
 import axios from 'axios';
 import { NextRequest } from 'next/server';
 
-function getJiraRedirectUri() {
-  if (process.env.JIRA_REDIRECT_URI) return process.env.JIRA_REDIRECT_URI;
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}/api/auth/jira/callback`;
-  }
-  return 'http://localhost:3000/api/auth/jira/callback';
-}
+import { getJiraRedirectUri } from '@/lib/oauthUtils';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

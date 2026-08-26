@@ -310,6 +310,23 @@ const ConfigurationPanel: React.FC<Props> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
+                  htmlFor="company-input"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
+                >
+                  Perusahaan
+                </label>
+                <select
+                  id="company-input"
+                  value={employeeInfo.company}
+                  onChange={(e) => onEmployeeInfoChange('company', e.target.value)}
+                  className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow bg-white"
+                >
+                  <option value="ENIGMA">ENIGMA</option>
+                  <option value="KOBUS">KOBUS</option>
+                </select>
+              </div>
+              <div>
+                <label
                   htmlFor="nik-input"
                   className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
                 >
@@ -340,6 +357,24 @@ const ConfigurationPanel: React.FC<Props> = ({
                   className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
                 />
               </div>
+              {employeeInfo.company === 'KOBUS' && (
+                <div>
+                  <label
+                    htmlFor="role-input"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#8E897E] mb-2"
+                  >
+                    Consultant Role
+                  </label>
+                  <input
+                    id="role-input"
+                    type="text"
+                    value={employeeInfo.consultantRole}
+                    onChange={(e) => onEmployeeInfoChange('consultantRole', e.target.value)}
+                    placeholder="Contoh: Mobile Front End Developer"
+                    className="w-full rounded-xl border border-[#E5E2D9] px-4 py-2.5 text-sm focus:border-[#A4B494] focus:ring focus:ring-[#A4B494]/20 outline-none transition-shadow"
+                  />
+                </div>
+              )}
               <div>
                 <label
                   htmlFor="diketahui-input"

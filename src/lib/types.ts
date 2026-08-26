@@ -13,6 +13,7 @@ export interface JiraOAuthConfig {
 }
 
 export interface Config {
+  company: CompanyName;
   adoOrg: string;
   adoProject: string;
   adoEmail: string;
@@ -38,9 +39,13 @@ export interface DayRecord {
   jamBerakhir?: string;
 }
 
+export type CompanyName = 'ENIGMA' | 'KOBUS';
+
 export interface EmployeeInfo {
+  company: CompanyName;
   nik: string;
   nama: string;
+  consultantRole: string;
   diketahuiOleh: string;
   disetujuiOleh: string;
 }
