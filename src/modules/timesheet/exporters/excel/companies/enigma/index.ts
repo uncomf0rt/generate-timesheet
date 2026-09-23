@@ -106,11 +106,7 @@ export async function generateEnigmaExcel(
       atasan: employeeInfo.disetujuiOleh,
       // Excel-only: any Libur record shows as plain "Libur"
       keterangan:
-        record.status === 'Hari kerja'
-          ? ''
-          : record.status === 'Libur'
-            ? 'Libur'
-            : record.status,
+        record.status === 'Hari kerja' ? '' : record.status === 'Libur' ? 'Libur' : record.status,
     };
 
     sheet.getCell(`B${rowNum}`).value = rowData.nik;
@@ -270,7 +266,8 @@ export async function generateEnigmaExcel(
   // SAVE
   // ============================================================
   const actualStart = records.length > 0 ? records[0].date : parseISO(startDateStr ?? '');
-  const actualEnd = records.length > 0 ? records[records.length - 1].date : parseISO(endDateStr ?? '');
+  const actualEnd =
+    records.length > 0 ? records[records.length - 1].date : parseISO(endDateStr ?? '');
   const startFormatted = format(actualStart, 'dd-MMM-yyyy', { locale: id });
   const endFormatted = format(actualEnd, 'dd-MMM-yyyy', { locale: id });
 

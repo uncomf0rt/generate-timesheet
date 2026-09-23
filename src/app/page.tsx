@@ -236,28 +236,16 @@ export default function App() {
       return;
     }
 
-    if (!config.adoOrg || !config.adoProject || !config.adoEmail || !config.azurePat) {
-      await Swal.fire({
-        title: 'Data Tidak Lengkap',
-        text: 'Harap lengkapi semua isian Azure DevOps (Organization, Project, Email, dan PAT).',
-        icon: 'warning',
-        confirmButtonText: 'OK',
-      });
-      return;
-    }
+    const hasAzure = config.adoOrg && config.adoProject && config.adoEmail && config.azurePat;
+    const hasJira = !!jiraToken;
 
-    const projects = config.adoProject
-      .split(',')
-      .map((p) => p.trim())
-      .filter(Boolean);
-    if (projects.length === 0) {
+    if (config.autoFillFromExternal && !hasAzure && !hasJira) {
       await Swal.fire({
-        title: 'Project Belum Dipilih',
-        text: 'Harap pilih minimal satu Project.',
-        icon: 'warning',
+        title: 'Tidak Ada Sumber Data Eksternal',
+        text: 'Auto-fill diaktifkan tetapi tidak ada Azure DevOps atau Jira yang dikonfigurasi. Aktivitas akan kosong.',
+        icon: 'info',
         confirmButtonText: 'OK',
       });
-      return;
     }
 
     if (new Date(config.startDate) > new Date(config.endDate)) {

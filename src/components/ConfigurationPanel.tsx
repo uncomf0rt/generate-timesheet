@@ -283,7 +283,7 @@ const ConfigurationPanel: React.FC<Props> = ({
             <div>
               <span className="text-xs font-bold text-[#5A6355] block">Auto-fill Aktivitas</span>
               <span className="text-[10px] text-[#9A958A]">
-                Isi otomatis aktivitas dari Azure DevOps & Jira saat generate
+                Isi otomatis aktivitas dari Azure DevOps & Jira (opsional)
               </span>
             </div>
           </label>
@@ -467,7 +467,7 @@ const ConfigurationPanel: React.FC<Props> = ({
               <div>
                 <h3 className="flex items-center text-sm uppercase tracking-widest font-bold text-[#8E897E] mb-6 pb-4 border-b border-[#E5E2D9]">
                   <Link2 className="w-5 h-5 mr-3 text-[#5A6355]" />
-                  Azure DevOps (Utama)
+                  Azure DevOps (Opsional)
                 </h3>
                 <div className="space-y-5">
                   {/* PAT Field */}
