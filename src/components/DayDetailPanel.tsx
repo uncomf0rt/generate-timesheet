@@ -77,7 +77,7 @@ export const DayDetailPanel: React.FC<Props> = ({
         {!isLeave && recordIndex >= 0 && (
           <button
             onClick={() => setQuickAddOpen(!quickAddOpen)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E7F5E4] hover:bg-[#D9EDDA] transition-colors text-xs font-bold text-[#5A6355]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E7F5E4] hover:bg-[#D5DDC8] transition-colors text-xs font-bold text-[#5A6355]"
           >
             <Plus className="w-3.5 h-3.5" />
             Tambah
@@ -172,7 +172,7 @@ export const DayDetailPanel: React.FC<Props> = ({
               disabled={isLeave}
               className={`w-full rounded-2xl border-0 py-3 px-4 text-sm outline-none transition-shadow ${
                 isLeave
-                  ? 'bg-[#FEF9E7] text-[#8E897E] cursor-not-allowed'
+                  ? 'bg-[#F0EDE6] text-[#8E897E] cursor-not-allowed'
                   : 'bg-[#F8F7F3] text-[#5A6355] focus:ring-2 focus:ring-[#A4B494]/30'
               }`}
             />
@@ -196,7 +196,7 @@ export const DayDetailPanel: React.FC<Props> = ({
               disabled={isLeave}
               className={`w-full rounded-2xl border-0 py-3 px-4 text-sm outline-none transition-shadow ${
                 isLeave
-                  ? 'bg-[#FEF9E7] text-[#8E897E] cursor-not-allowed'
+                  ? 'bg-[#F0EDE6] text-[#8E897E] cursor-not-allowed'
                   : 'bg-[#F8F7F3] text-[#5A6355] focus:ring-2 focus:ring-[#A4B494]/30'
               }`}
             />
@@ -221,7 +221,7 @@ export const DayDetailPanel: React.FC<Props> = ({
             }}
             className={`w-full rounded-2xl border-0 py-3 px-4 pr-8 text-sm font-bold outline-none transition-shadow focus:ring-2 ${
               isLeave
-                ? 'bg-[#FEF9E7] text-[#8E897E] ring-1 ring-[#D9D5CB] focus:ring-[#8E897E]'
+                ? 'bg-[#F0EDE6] text-[#8E897E] ring-1 ring-[#D9D5CB] focus:ring-[#8E897E]'
                 : 'bg-[#F8F7F3] text-[#5A6355] ring-1 ring-[#A4B494]/30 focus:ring-[#A4B494]'
             }`}
           >
@@ -263,7 +263,7 @@ export const DayDetailPanel: React.FC<Props> = ({
             id="aktivitas"
             className={`w-full resize-y rounded-2xl border-0 p-4 text-sm outline-none transition-shadow focus:ring-2 ${
               isLeave
-                ? 'bg-[#FEF9E7] border border-[#E5E2D9] focus:border-[#E5E2D9] focus:ring-0'
+                ? 'bg-[#F0EDE6] border border-[#E5E2D9] focus:border-[#E5E2D9] focus:ring-0'
                 : 'bg-[#F8F7F3] border border-[#E5E2D9] focus:border-[#A4B494] focus:ring-[#A4B494]/30'
             }`}
             value={

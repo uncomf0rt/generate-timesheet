@@ -157,9 +157,9 @@ export function SignatureInput({
           <h2 className="text-xl font-serif italic text-[#3E3D39]">Signature</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-[#EAE7DF] rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-[#8E897E]" />
           </button>
         </div>
 
@@ -170,7 +170,7 @@ export function SignatureInput({
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors ${
               mode === 'draw'
                 ? 'bg-[#5A6355] text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-[#EAE7DF] text-[#5A6355] hover:bg-[#E0DDD5]'
             }`}
           >
             <Pen className="w-4 h-4" />
@@ -181,7 +181,7 @@ export function SignatureInput({
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors ${
               mode === 'upload'
                 ? 'bg-[#5A6355] text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-[#EAE7DF] text-[#5A6355] hover:bg-[#E0DDD5]'
             }`}
           >
             <Upload className="w-4 h-4" />
@@ -195,7 +195,7 @@ export function SignatureInput({
             <div className="space-y-3">
               <canvas
                 ref={canvasRef}
-                className="w-full border border-gray-300 rounded-xl cursor-crosshair touch-none"
+                className="w-full border border-[#D5DDC8] rounded-xl cursor-crosshair touch-none"
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
                 onMouseUp={stopDrawing}
@@ -206,7 +206,7 @@ export function SignatureInput({
               />
               <button
                 onClick={clearCanvas}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-[#9C5C4F] hover:bg-[#FBF5F2] rounded-full transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
                 Clear
@@ -214,11 +214,11 @@ export function SignatureInput({
             </div>
           ) : (
             <div className="space-y-3">
-              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#5A6355] transition-colors">
+              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-[#D5DDC8] rounded-xl cursor-pointer hover:border-[#5A6355] transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">Click to upload signature image</p>
-                  <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</p>
+                  <Upload className="w-8 h-8 text-[#C4C0B8] mb-2" />
+                  <p className="text-sm text-[#8E897E]">Click to upload signature image</p>
+                  <p className="text-xs text-[#C4C0B8] mt-1">PNG, JPG up to 2MB</p>
                 </div>
                 <input
                   type="file"
@@ -228,7 +228,7 @@ export function SignatureInput({
                 />
               </label>
               {uploadedFile && (
-                <p className="text-sm text-gray-600">Selected: {uploadedFile.name}</p>
+                <p className="text-sm text-[#5A6355]">Selected: {uploadedFile.name}</p>
               )}
             </div>
           )}
@@ -237,8 +237,8 @@ export function SignatureInput({
         {/* Preview */}
         {previewUrl && (
           <div className="mb-6">
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Preview</p>
-            <div className="border border-gray-200 rounded-xl p-2 bg-gray-50">
+            <p className="text-xs text-[#8E897E] uppercase tracking-wider mb-2">Preview</p>
+            <div className="border border-[#E5E2D9] rounded-xl p-2 bg-[#F0EDE6]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={previewUrl} alt="Signature preview" className="max-h-24 mx-auto" />
             </div>
@@ -249,7 +249,7 @@ export function SignatureInput({
         <div className="flex gap-3 justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 rounded-full text-sm font-bold border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+            className="px-6 py-2.5 rounded-full text-sm font-bold border border-[#D5DDC8] text-[#5A6355] hover:bg-[#F0EDE6] transition-colors"
           >
             Cancel
           </button>

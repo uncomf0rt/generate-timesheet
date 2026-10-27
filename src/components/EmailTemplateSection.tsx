@@ -10,6 +10,8 @@ interface Props {
   employeeInfo: EmployeeInfo;
   startDate: string;
   endDate: string;
+  templates: Record<string, { text: string; syncHash: string }>;
+  onTemplatesChange: (next: Record<string, { text: string; syncHash: string }>) => void;
 }
 
 interface StoredTemplate {
@@ -17,9 +19,13 @@ interface StoredTemplate {
   syncHash: string;
 }
 
-const STORAGE_KEY = 'timesheet-email-templates';
-
-const EmailTemplateSection: React.FC<Props> = ({ employeeInfo, startDate, endDate }) => {
+const EmailTemplateSection: React.FC<Props> = ({
+  employeeInfo,
+  startDate,
+  endDate,
+  templates: storedTemplates,
+  onTemplatesChange,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [templates, setTemplates] = useState<Record<string, { text: string; copied: boolean }>>({
     'approval-1': { text: '', copied: false },
@@ -77,13 +83,10 @@ ${nama}`;
     [employeeInfo, startDate, endDate, formatDate]
   );
 
-  // Load from localStorage on mount
+  // Load from props (encrypted payload from parent) on mount + sync
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     const currentHash = computeSyncHash();
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const storedData: Record<string, StoredTemplate> = stored ? JSON.parse(stored) : {};
+    const storedData: Record<string, StoredTemplate> = storedTemplates ?? {};
 
     const newTemplates: Record<string, { text: string; copied: boolean }> = {
       'approval-1': { text: '', copied: false },
@@ -105,21 +108,19 @@ ${nama}`;
     }
 
     setTemplates(newTemplates);
-  }, [computeSyncHash, generateDefaultText]);
+  }, [computeSyncHash, generateDefaultText, storedTemplates]);
 
-  // Save to localStorage when text changes
+  // Save back through parent's encrypted storage
   const saveToStorage = useCallback(
     (templateId: string, text: string) => {
-      if (typeof window === 'undefined') return;
-
       const currentHash = computeSyncHash();
-      const stored = localStorage.getItem(STORAGE_KEY);
-      const storedData: Record<string, StoredTemplate> = stored ? JSON.parse(stored) : {};
-
-      storedData[templateId] = { text, syncHash: currentHash };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(storedData));
+      const next: Record<string, StoredTemplate> = {
+        ...(storedTemplates ?? {}),
+        [templateId]: { text, syncHash: currentHash },
+      };
+      onTemplatesChange(next);
     },
-    [computeSyncHash]
+    [computeSyncHash, onTemplatesChange, storedTemplates]
   );
 
   const buttons: Record<string, string> = useMemo(
@@ -243,7 +244,7 @@ ${nama}`;
                   onClick={() => handleCopy(templateId)}
                   className={`transition-colors ${
                     templates[templateId].copied
-                      ? 'text-green-600'
+                      ? 'text-[#6F7B5E]'
                       : 'text-[#5A6355] hover:text-[#4A5246]'
                   }`}
                   title="Salin ke clipboard"

@@ -1,182 +1,201 @@
 'use client';
 import { format, subDays } from 'date-fns';
-import { HelpCircle, X } from 'lucide-react';
+import { HelpCircle, Lock, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Swal from 'sweetalert2';
 import EmailTemplateSection from '@/components/EmailTemplateSection';
 import { HelpPanel } from '@/components/HelpPanel';
-import { OAuthCallback } from '@/components/OAuthCallback';
 import { PreviewSection } from '@/components/PreviewSection';
 import { SignatureInput } from '@/components/SignatureInput';
 import * as api from '@/lib/api';
 import { exportToPDF } from '@/lib/exportUtils';
 import { generateTimesheetData } from '@/lib/generator';
-import { clearTokens, retrieveTokens } from '@/lib/oauthUtils';
-import { Config, DayRecord, EmployeeInfo, OAuthToken, SignatureData } from '@/lib/types';
+import { clearJiraToken } from '@/lib/oauthUtils';
+import {
+  changePassphrase,
+  detectPlaintextMigrationNeeded,
+  hasEnvelope,
+  readPlaintextForMigration,
+  type SecurePayload,
+  savePayload,
+} from '@/lib/secureStorage';
+import type { Config, DayRecord, EmployeeInfo, OAuthToken, SignatureData } from '@/lib/types';
 import { getExcelExporter } from '@/modules/timesheet/exporters/excel';
 import { buildExportPayload, getWordExporter } from '@/modules/timesheet/exporters/word';
 import { loadKobusLogo } from '@/modules/timesheet/exporters/word/shared/adapter';
 
 const ConfigurationPanel = dynamic(() => import('@/components/ConfigurationPanel'), { ssr: false });
+const PassphraseGate = dynamic(
+  () => import('@/components/PassphraseGate').then((m) => m.PassphraseGate),
+  { ssr: false }
+);
+const PassphrasePrompt = dynamic(
+  () => import('@/components/PassphrasePrompt').then((m) => m.PassphrasePrompt),
+  { ssr: false }
+);
 
 export default function App() {
   // ============================================================================
-  // STATE HOOKS - OAuth & Auth
+  // ENCRYPTED STATE - CryptoKey + decrypted payload (in-memory only)
   // ============================================================================
-  const [jiraToken, setJiraToken] = useState<OAuthToken | undefined>();
+  const [cryptoKey, setCryptoKey] = useState<CryptoKey | null>(null);
+  const [payload, setPayload] = useState<SecurePayload | null>(null);
+
+  // Migration: detected on first load, passed to PassphraseGate
+  const [migrationPayload, setMigrationPayload] = useState<SecurePayload | null>(null);
+
+  // Change-passphrase modal
+  const [changePpOpen, setChangePpOpen] = useState(false);
+  const [changePpBusy, setChangePpBusy] = useState(false);
+
+  // ============================================================================
+  // LOCAL (non-encrypted) STATE
+  // ============================================================================
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [jiraLoginLoading, setJiraLoginLoading] = useState(false);
-  const [oauthCallbackData, setOAuthCallbackData] = useState<{
-    service: 'jira';
-    state: string;
-  } | null>(null);
-  const [oauthError, setOAuthError] = useState<string | null>(null);
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
-  // ============================================================================
-  // STATE HOOKS - Config (initialized without side effects)
-  // ============================================================================
-  const [config, setConfig] = useState<Config>(() => {
-    const savedConfig =
-      typeof window !== 'undefined' ? localStorage.getItem('timesheet-config') : null;
-    const parsedConfig = savedConfig ? JSON.parse(savedConfig) : {};
-
-    return {
-      adoOrg: parsedConfig.adoOrg || '',
-      adoProject: parsedConfig.adoProject || '',
-      adoEmail: parsedConfig.adoEmail || '',
-      azurePat: parsedConfig.azurePat || '',
-      startDate: '',
-      endDate: '',
-      autoFillFromExternal: parsedConfig.autoFillFromExternal ?? true,
-      company: parsedConfig.company ?? 'ENIGMA',
-    };
-  });
-
-  // ============================================================================
-  // STATE HOOKS - UI State
-  // ============================================================================
   const [records, setRecords] = useState<{
     records: DayRecord[];
     jiraTokenExpired: boolean;
-  }>({
-    records: [],
-    jiraTokenExpired: false,
-  });
+  }>({ records: [], jiraTokenExpired: false });
   const [loading, setLoading] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [forceEmployeeFormOpen, _setForceEmployeeFormOpen] = useState(0);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
 
-  // Employee info state
-  const [employeeInfo, setEmployeeInfo] = useState<EmployeeInfo>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('timesheet-employee-info');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return { ...parsed, consultantRole: parsed.consultantRole ?? '' };
-      }
-    }
-    return {
-      company: 'ENIGMA',
-      nik: '',
-      nama: '',
-      consultantRole: '',
-      diketahuiOleh: '',
-      disetujuiOleh: '',
-    };
-  });
-
-  // Signature data state
-  const [signatureData, setSignatureData] = useState<SignatureData | undefined>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('timesheet-signature');
-      if (saved) return JSON.parse(saved);
-    }
-    return undefined;
-  });
-
-  // Work items cached from the last generate call
   const [allCommits, setAllCommits] = useState<any[]>([]);
   const [allTasks, setAllTasks] = useState<any[]>([]);
 
-  // ============================================================================
-  // EFFECT HOOKS - Side effects grouped by purpose
-  // ============================================================================
-
-  // Effect: Set default dates on client mount (avoids build-time new Date() error)
+  // Set default dates on client mount (avoids build-time new Date() error)
   useEffect(() => {
-    setConfig((prev) => ({
-      ...prev,
-      startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
-      endDate: format(new Date(), 'yyyy-MM-dd'),
-    }));
+    setStartDate(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
+    setEndDate(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
-  // Effect: Initialize Jira token from storage on component mount
+  // ============================================================================
+  // MIGRATION DETECTION (runs once after mount)
+  // ============================================================================
   useEffect(() => {
-    const { jiraToken: savedJiraToken } = retrieveTokens();
-    if (savedJiraToken) {
-      setJiraToken(savedJiraToken);
+    if (typeof window === 'undefined') return;
+    if (hasEnvelope()) return;
+    if (detectPlaintextMigrationNeeded()) {
+      setMigrationPayload(readPlaintextForMigration());
     }
   }, []);
 
-  // Effect: Handle OAuth callback from URL parameters (Backend-only flow)
+  // ============================================================================
+  // EFFECT - Persist payload to encrypted envelope on change
+  // ============================================================================
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (!cryptoKey || !payload) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      savePayload(cryptoKey, payload).catch((err) => {
+        console.error('Failed to save encrypted payload:', err);
+      });
+    }, 200);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [cryptoKey, payload]);
+
+  // ============================================================================
+  // EFFECT - OAuth callback (URL-bounce from /api/auth/jira/callback)
+  // ============================================================================
+  useEffect(() => {
+    if (!cryptoKey || !payload) return;
     const params = new URLSearchParams(window.location.search);
     const jiraTokenParam = params.get('jira_token');
+    if (!jiraTokenParam) return;
 
-    if (jiraTokenParam) {
-      const parsed = JSON.parse(decodeURIComponent(jiraTokenParam));
-      localStorage.setItem('jira_token', JSON.stringify(parsed));
-
+    try {
+      const parsed = JSON.parse(decodeURIComponent(jiraTokenParam)) as OAuthToken;
+      setPayload({ ...payload, jiraToken: parsed });
       window.history.replaceState({}, document.title, '/');
-      window.location.reload();
+    } catch (_e) {
+      setOAuthError('Failed to parse Jira token from callback URL.');
+      window.history.replaceState({}, document.title, '/');
     }
-  }, []);
-
-  // Effect: Save config to localStorage when it changes
-  useEffect(() => {
-    const { startDate, endDate, ...configToSave } = config;
-    localStorage.setItem('timesheet-config', JSON.stringify(configToSave));
-  }, [config]);
-
-  // Effect: Save employee info to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('timesheet-employee-info', JSON.stringify(employeeInfo));
-  }, [employeeInfo]);
-
-  // Effect: Save signature to localStorage when it changes
-  useEffect(() => {
-    if (signatureData) {
-      localStorage.setItem('timesheet-signature', JSON.stringify(signatureData));
-    }
-  }, [signatureData]);
-
-  // Effect: Smooth scroll to results when records are loaded
-  useEffect(() => {
-    if (records.records.length > 0) {
-      document.getElementById('preview')?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [records.records.length]);
+  }, [cryptoKey, payload]);
 
   // ============================================================================
-  // HANDLERS - Event handlers defined after hooks
+  // HANDLERS
   // ============================================================================
 
-  const handleOAuthSuccess = (service: 'azure' | 'jira') => {
-    const { jiraToken: newJiraToken } = retrieveTokens();
-
-    if (service === 'jira' && newJiraToken) {
-      setJiraToken(newJiraToken);
-    }
-
-    setOAuthCallbackData(null);
-    setOAuthError(null);
+  const handleUnlock = (key: CryptoKey, unlockedPayload: SecurePayload) => {
+    setCryptoKey(key);
+    setPayload(unlockedPayload);
   };
 
-  const handleOAuthError = (error: string) => {
-    setOAuthError(error);
-    setOAuthCallbackData(null);
+  const handleMigrationComplete = () => {
+    setMigrationPayload(null);
+  };
+
+  const handleLock = () => {
+    setCryptoKey(null);
+    setPayload(null);
+    setRecords({ records: [], jiraTokenExpired: false });
+    setAllCommits([]);
+    setAllTasks([]);
+  };
+
+  const handleChangePassphrase = async (
+    currentPassphrase: string,
+    newPassphrase: string
+  ): Promise<boolean> => {
+    if (!payload) return false;
+    setChangePpBusy(true);
+    try {
+      const result = await changePassphrase(currentPassphrase, newPassphrase, payload);
+      if (!result) {
+        setChangePpBusy(false);
+        return false;
+      }
+      // Lock and prompt re-unlock with new passphrase
+      setCryptoKey(null);
+      setPayload(null);
+      setChangePpOpen(false);
+      setChangePpBusy(false);
+      return true;
+    } catch {
+      setChangePpBusy(false);
+      return false;
+    }
+  };
+
+  const handleConfigChange = (key: keyof Config, value: any) => {
+    if (!payload) return;
+    if (key === 'company') setPayload({ ...payload, company: value });
+    else if (key === 'adoOrg') setPayload({ ...payload, adoOrg: value });
+    else if (key === 'adoProject') setPayload({ ...payload, adoProject: value });
+    else if (key === 'adoEmail') setPayload({ ...payload, adoEmail: value });
+    else if (key === 'azurePat') setPayload({ ...payload, azurePat: value });
+    else if (key === 'autoFillFromExternal')
+      setPayload({ ...payload, autoFillFromExternal: value });
+    else if (key === 'startDate') setStartDate(value);
+    else if (key === 'endDate') setEndDate(value);
+  };
+
+  const handleEmployeeInfoChange = (field: keyof EmployeeInfo, value: string) => {
+    if (!payload) return;
+    setPayload({
+      ...payload,
+      employeeInfo: { ...payload.employeeInfo, [field]: value },
+    });
+  };
+
+  const handleSignatureSave = (sig: SignatureData) => {
+    if (!payload) return;
+    setPayload({ ...payload, signatureData: sig });
+  };
+
+  const handleTemplatesChange = (next: Record<string, { text: string; syncHash: string }>) => {
+    if (!payload) return;
+    setPayload({ ...payload, emailTemplates: next });
   };
 
   const handleJiraLogin = async () => {
@@ -190,13 +209,40 @@ export default function App() {
     }
   };
 
-  const handleJiraLogout = () => {
-    setJiraToken(undefined);
-    clearTokens();
+  const handleJiraLogout = async () => {
+    if (!cryptoKey || !payload) return;
+    await clearJiraToken(cryptoKey);
+    setPayload({ ...payload, jiraToken: undefined });
   };
 
-  const handleChange = (key: keyof Config, value: any) => {
-    setConfig((prev) => ({ ...prev, [key]: value }));
+  const handleClearSavedData = async () => {
+    if (!cryptoKey || !payload) return;
+    if (!window.confirm('Apakah Anda yakin ingin menghapus data kredensial yang tersimpan?'))
+      return;
+    const empty: SecurePayload = {
+      adoOrg: '',
+      adoProject: '',
+      adoEmail: '',
+      azurePat: '',
+      autoFillFromExternal: true,
+      company: 'ENIGMA',
+      jiraToken: undefined,
+      signatureData: undefined,
+      employeeInfo: {
+        company: 'ENIGMA',
+        nik: '',
+        nama: '',
+        consultantRole: '',
+        diketahuiOleh: '',
+        disetujuiOleh: '',
+      },
+      emailTemplates: {},
+    };
+    await savePayload(cryptoKey, empty);
+    setPayload(empty);
+    setRecords({ records: [], jiraTokenExpired: false });
+    setStartDate(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
+    setEndDate(format(new Date(), 'yyyy-MM-dd'));
   };
 
   const handleUpdateRecord = (index: number, field: keyof DayRecord, value: any) => {
@@ -207,26 +253,9 @@ export default function App() {
     });
   };
 
-  const handleClearSavedData = () => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus data kredensial yang tersimpan?')) {
-      localStorage.removeItem('timesheet-config');
-      clearTokens();
-      setJiraToken(undefined);
-      setConfig({
-        adoOrg: '',
-        adoProject: '',
-        adoEmail: '',
-        azurePat: '',
-        startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
-        endDate: format(new Date(), 'yyyy-MM-dd'),
-        autoFillFromExternal: true,
-        company: 'ENIGMA',
-      });
-    }
-  };
-
   const handleGenerate = async () => {
-    if (!employeeInfo.nik || !employeeInfo.nama) {
+    if (!payload) return;
+    if (!payload.employeeInfo.nik || !payload.employeeInfo.nama) {
       await Swal.fire({
         title: 'Data Tidak Lengkap',
         text: 'Harap lengkapi NIK dan Nama sebelum generate timesheet.',
@@ -236,10 +265,23 @@ export default function App() {
       return;
     }
 
-    const hasAzure = config.adoOrg && config.adoProject && config.adoEmail && config.azurePat;
-    const hasJira = !!jiraToken;
+    const emails = api.parseEmails(payload.adoEmail);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalidEmails = emails.filter((e) => !emailRegex.test(e));
+    if (invalidEmails.length > 0) {
+      await Swal.fire({
+        title: 'Email Committer Tidak Valid',
+        text: `Email berikut tidak valid: ${invalidEmails.join(', ')}. Pisahkan beberapa email dengan koma (,) dan perbaiki sebelum generate timesheet.`,
+        icon: 'error',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
 
-    if (config.autoFillFromExternal && !hasAzure && !hasJira) {
+    const hasAzure = payload.adoOrg && payload.adoProject && emails.length > 0 && payload.azurePat;
+    const hasJira = !!payload.jiraToken;
+
+    if (payload.autoFillFromExternal && !hasAzure && !hasJira) {
       await Swal.fire({
         title: 'Tidak Ada Sumber Data Eksternal',
         text: 'Auto-fill diaktifkan tetapi tidak ada Azure DevOps atau Jira yang dikonfigurasi. Aktivitas akan kosong.',
@@ -248,7 +290,7 @@ export default function App() {
       });
     }
 
-    if (new Date(config.startDate) > new Date(config.endDate)) {
+    if (new Date(startDate) > new Date(endDate)) {
       await Swal.fire({
         title: 'Tanggal Tidak Valid',
         text: 'Tanggal Mulai tidak boleh lebih besar dari Tanggal Selesai.',
@@ -261,13 +303,19 @@ export default function App() {
     setLoading(true);
     try {
       const configWithTokens: Config = {
-        ...config,
-        jiraToken: jiraToken || undefined,
+        company: payload.company,
+        adoOrg: payload.adoOrg,
+        adoProject: payload.adoProject,
+        adoEmail: payload.adoEmail,
+        azurePat: payload.azurePat,
+        startDate,
+        endDate,
+        autoFillFromExternal: payload.autoFillFromExternal,
+        jiraToken: payload.jiraToken,
       };
 
       const result = await generateTimesheetData(configWithTokens);
 
-      // Transform raw commits into WorkItems for the selector panel
       const commitsAsWorkItems = result.allCommits.map((c: any, idx: number) => ({
         id: `ado-${idx}`,
         source: 'azure' as const,
@@ -278,7 +326,6 @@ export default function App() {
         projectName: c.projectName,
       }));
 
-      // Transform raw tasks into WorkItems
       const tasksAsWorkItems = result.allTasks.map((t: any, idx: number) => ({
         id: `jira-${idx}`,
         source: 'jira' as const,
@@ -303,7 +350,8 @@ export default function App() {
   };
 
   const handleExport = async () => {
-    if (!employeeInfo.nik || !employeeInfo.nama) {
+    if (!payload) return;
+    if (!payload.employeeInfo.nik || !payload.employeeInfo.nama) {
       await Swal.fire({
         title: 'Data Tidak Lengkap',
         text: 'Harap lengkapi NIK dan Nama sebelum export.',
@@ -312,7 +360,7 @@ export default function App() {
       });
       return;
     }
-    if (employeeInfo.company !== 'ENIGMA') {
+    if (payload.employeeInfo.company !== 'ENIGMA') {
       await Swal.fire({
         title: 'Tidak Tersedia',
         text: 'Export Excel hanya tersedia untuk company ENIGMA.',
@@ -321,18 +369,19 @@ export default function App() {
       });
       return;
     }
-    const exporter = getExcelExporter(employeeInfo.company as 'ENIGMA');
+    const exporter = getExcelExporter(payload.employeeInfo.company as 'ENIGMA');
     await exporter.generate(
       records.records,
-      employeeInfo,
-      signatureData,
-      config.startDate,
-      config.endDate
+      payload.employeeInfo,
+      payload.signatureData,
+      startDate,
+      endDate
     );
   };
 
   const handleExportWord = async () => {
-    if (!employeeInfo.nik || !employeeInfo.nama) {
+    if (!payload) return;
+    if (!payload.employeeInfo.nik || !payload.employeeInfo.nama) {
       await Swal.fire({
         title: 'Data Tidak Lengkap',
         text: 'Harap lengkapi NIK dan Nama sebelum export.',
@@ -341,7 +390,7 @@ export default function App() {
       });
       return;
     }
-    if (employeeInfo.company !== 'KOBUS') {
+    if (payload.employeeInfo.company !== 'KOBUS') {
       await Swal.fire({
         title: 'Tidak Tersedia',
         text: 'Export Word hanya tersedia untuk company KOBUS.',
@@ -355,9 +404,9 @@ export default function App() {
     const exportData = await buildExportPayload(
       'KOBUS',
       records.records,
-      employeeInfo,
+      payload.employeeInfo,
       logo,
-      signatureData?.imageData
+      payload.signatureData?.imageData
     );
     await exporter.generate(exportData);
   };
@@ -375,28 +424,42 @@ export default function App() {
   };
 
   // ============================================================================
-  // RENDER - Early return for OAuth callback
+  // GATE - If not unlocked, show passphrase gate
   // ============================================================================
-
-  if (oauthCallbackData) {
+  if (!cryptoKey || !payload) {
     return (
-      <OAuthCallback
-        service={oauthCallbackData.service}
-        state={oauthCallbackData.state}
-        onSuccess={handleOAuthSuccess}
-        onError={handleOAuthError}
+      <PassphraseGate
+        onUnlock={handleUnlock}
+        migrationPayload={migrationPayload ?? undefined}
+        onMigrationComplete={handleMigrationComplete}
       />
     );
   }
+
+  // Build a Config view for the panel (startDate/endDate are local state)
+  const config: Config = {
+    company: payload.company,
+    adoOrg: payload.adoOrg,
+    adoProject: payload.adoProject,
+    adoEmail: payload.adoEmail,
+    azurePat: payload.azurePat,
+    startDate,
+    endDate,
+    autoFillFromExternal: payload.autoFillFromExternal,
+    jiraToken: payload.jiraToken,
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F7F3] text-[#3C3A36] py-12 px-4 sm:px-6 lg:px-8 font-sans selection:bg-[#A4B494] selection:text-white">
       <div className="max-w-6xl mx-auto space-y-12">
         {/* OAuth Error Alert */}
         {oauthError && (
-          <div className="bg-red-50 border border-red-200 rounded-3xl p-4 flex items-start justify-between">
-            <p className="text-sm text-red-800">{oauthError}</p>
-            <button onClick={() => setOAuthError(null)} className="text-red-600 hover:text-red-800">
+          <div className="bg-[#FBF5F2] border border-[#D7B5AB] rounded-3xl p-4 flex items-start justify-between">
+            <p className="text-sm text-[#7C3F35]">{oauthError}</p>
+            <button
+              onClick={() => setOauthError(null)}
+              className="text-[#9C5C4F] hover:text-[#7C3F35]"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -429,6 +492,14 @@ export default function App() {
               )}
               {showHelp ? 'Tutup Panduan' : 'Butuh Bantuan?'}
             </button>
+            <button
+              onClick={handleLock}
+              title="Kunci sesi (data tetap tersimpan terenkripsi)"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border bg-white text-[#5A6355] border-[#E5E2D9] hover:bg-[#F8F7F3]"
+            >
+              <Lock className="w-4 h-4 text-[#A4B494]" />
+              Lock
+            </button>
           </div>
         </div>
 
@@ -437,21 +508,20 @@ export default function App() {
 
         <ConfigurationPanel
           config={config}
-          onChange={handleChange}
+          onChange={handleConfigChange}
           onGenerate={handleGenerate}
           onClearData={handleClearSavedData}
           loading={loading}
-          jiraToken={jiraToken}
+          jiraToken={payload.jiraToken}
           onJiraLogin={handleJiraLogin}
           onJiraLogout={handleJiraLogout}
           jiraLoginLoading={jiraLoginLoading}
-          employeeInfo={employeeInfo}
-          onEmployeeInfoChange={(field, value) =>
-            setEmployeeInfo((prev) => ({ ...prev, [field]: value }))
-          }
-          signatureData={signatureData}
+          employeeInfo={payload.employeeInfo}
+          onEmployeeInfoChange={handleEmployeeInfoChange}
+          signatureData={payload.signatureData}
           onOpenSignatureModal={() => setShowSignatureModal(true)}
           forceEmployeeFormOpen={forceEmployeeFormOpen}
+          onChangePassphrase={() => setChangePpOpen(true)}
         />
 
         {/* Results */}
@@ -459,20 +529,20 @@ export default function App() {
           <PreviewSection
             records={records.records}
             onUpdateRecord={handleUpdateRecord}
-            configStartDate={config.startDate}
-            configEndDate={config.endDate}
+            configStartDate={startDate}
+            configEndDate={endDate}
             jiraTokenExpired={records.jiraTokenExpired}
-            employeeInfo={employeeInfo}
-            signatureData={signatureData}
+            employeeInfo={payload.employeeInfo}
+            signatureData={payload.signatureData}
             onExportExcel={handleExport}
             onExportWord={handleExportWord}
             onExportPDF={() =>
               exportToPDF(
                 records.records,
-                config.startDate,
-                config.endDate,
-                employeeInfo,
-                signatureData
+                startDate,
+                endDate,
+                payload.employeeInfo,
+                payload.signatureData
               )
             }
             allCommits={allCommits}
@@ -485,19 +555,29 @@ export default function App() {
         <SignatureInput
           isOpen={showSignatureModal}
           onClose={() => setShowSignatureModal(false)}
-          onSave={setSignatureData}
-          existingSignature={signatureData}
+          onSave={handleSignatureSave}
+          existingSignature={payload.signatureData}
         />
 
         {/* Email Template Section */}
         {records.records.length > 0 && (
           <EmailTemplateSection
-            employeeInfo={employeeInfo}
-            startDate={config.startDate}
-            endDate={config.endDate}
+            employeeInfo={payload.employeeInfo}
+            startDate={startDate}
+            endDate={endDate}
+            templates={payload.emailTemplates}
+            onTemplatesChange={handleTemplatesChange}
           />
         )}
       </div>
+
+      {/* Change Passphrase Modal */}
+      <PassphrasePrompt
+        isOpen={changePpOpen}
+        onClose={() => setChangePpOpen(false)}
+        onChange={handleChangePassphrase}
+        busy={changePpBusy}
+      />
     </div>
   );
 }

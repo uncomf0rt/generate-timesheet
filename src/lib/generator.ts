@@ -1,5 +1,5 @@
 import { eachDayOfInterval, format, isWeekend as isDateWeekend, isSameDay } from 'date-fns';
-import { getAdoCommits, getAdoRepos, getHolidays, getJiraTasks } from './api';
+import { getAdoCommits, getAdoRepos, getHolidays, getJiraTasks, parseEmails } from './api';
 import { Config, DayRecord } from './types';
 
 export async function generateTimesheetData(config: Config): Promise<{
@@ -46,7 +46,12 @@ export async function generateTimesheetData(config: Config): Promise<{
     .split(',')
     .map((p) => p.trim())
     .filter(Boolean);
-  if (config.adoOrg && projects.length > 0 && config.azurePat && config.adoEmail) {
+  if (
+    config.adoOrg &&
+    projects.length > 0 &&
+    config.azurePat &&
+    parseEmails(config.adoEmail).length > 0
+  ) {
     try {
       for (const project of projects) {
         const projectConfig = { ...config, adoProject: project };

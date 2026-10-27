@@ -1,5 +1,7 @@
 import * as api from './api';
-import { OAuthToken } from './types';
+import * as crypto from './crypto';
+import * as secureStorage from './secureStorage';
+import type { OAuthToken } from './types';
 
 const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes before actual expiry
 
@@ -10,25 +12,6 @@ export function isTokenExpired(token?: OAuthToken): boolean {
   if (!token?.expires_in) return true;
   return Date.now() > token.expires_in - TOKEN_EXPIRY_BUFFER;
 }
-
-/**
- * Ensure Azure token is valid, refresh if needed
- */
-// export async function ensureAzureTokenValid(token?: OAuthToken): Promise<OAuthToken | null> {
-//   if (!token) return null;
-
-//   if (isTokenExpired(token)) {
-//     if (!token.refreshToken) return null;
-//     try {
-//       return await api.refreshAzureToken(token.refreshToken);
-//     } catch (error) {
-//       console.error('Failed to refresh Azure token:', error);
-//       return null;
-//     }
-//   }
-
-//   return token;
-// }
 
 /**
  * Ensure Jira token is valid, refresh if needed
@@ -57,36 +40,49 @@ export function getAuthorizationHeader(token: OAuthToken): string {
 }
 
 /**
- * Store tokens in localStorage
+ * Internal helper: load the current payload, apply a mutation, and re-save.
+ * Throws if no envelope exists or the key does not match.
  */
-export function storeTokens(azureToken?: OAuthToken, jiraToken?: OAuthToken): void {
-  if (azureToken) {
-    localStorage.setItem('azure_token', JSON.stringify(azureToken));
-  }
-  if (jiraToken) {
-    localStorage.setItem('jira_token', JSON.stringify(jiraToken));
-  }
+async function mutatePayload(
+  key: CryptoKey,
+  mutator: (payload: secureStorage.SecurePayload) => void
+): Promise<secureStorage.SecurePayload> {
+  const envelope = secureStorage.loadEnvelope();
+  if (!envelope) throw new Error('No encrypted envelope exists. Set up a passphrase first.');
+  const payloadJson = await crypto.decrypt(key, envelope.payload);
+  const payload = JSON.parse(payloadJson) as secureStorage.SecurePayload;
+  mutator(payload);
+  await secureStorage.savePayload(key, payload);
+  return payload;
 }
 
 /**
- * Retrieve tokens from localStorage
+ * Store Jira OAuth token inside the encrypted envelope.
  */
-export function retrieveTokens(): { azureToken?: OAuthToken; jiraToken?: OAuthToken } {
-  const azureTokenStr = localStorage.getItem('azure_token');
-  const jiraTokenStr = localStorage.getItem('jira_token');
-
-  return {
-    azureToken: azureTokenStr ? JSON.parse(azureTokenStr) : undefined,
-    jiraToken: jiraTokenStr ? JSON.parse(jiraTokenStr) : undefined,
-  };
+export async function storeJiraToken(key: CryptoKey, token: OAuthToken): Promise<void> {
+  await mutatePayload(key, (payload) => {
+    payload.jiraToken = token;
+  });
 }
 
 /**
- * Clear tokens from localStorage
+ * Retrieve Jira OAuth token from the encrypted envelope.
  */
-export function clearTokens(): void {
-  localStorage.removeItem('azure_token');
-  localStorage.removeItem('jira_token');
+export async function retrieveJiraToken(key: CryptoKey): Promise<OAuthToken | undefined> {
+  const envelope = secureStorage.loadEnvelope();
+  if (!envelope) return undefined;
+  const payloadJson = await crypto.decrypt(key, envelope.payload);
+  const payload = JSON.parse(payloadJson) as secureStorage.SecurePayload;
+  return payload.jiraToken;
+}
+
+/**
+ * Clear Jira OAuth token from the encrypted envelope.
+ */
+export async function clearJiraToken(key: CryptoKey): Promise<void> {
+  await mutatePayload(key, (payload) => {
+    payload.jiraToken = undefined;
+  });
 }
 
 export function getJiraRedirectUri(): string {

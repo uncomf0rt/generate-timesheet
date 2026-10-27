@@ -111,7 +111,7 @@ export const PreviewSection: React.FC<Props> = ({
             </p>
           </div>
           {jiraTokenExpired && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2 text-xs text-amber-700">
+            <div className="bg-[#FAF1E0] border border-[#D4B987] rounded-2xl px-4 py-2 text-xs text-[#7C5F2E]">
               Jira token expired. Please reconnect to include tasks.
             </div>
           )}
@@ -148,7 +148,7 @@ export const PreviewSection: React.FC<Props> = ({
       </div>
 
       {/* PDF Preview */}
-      <div className="bg-[#FAFAF8] rounded-2xl border border-[#E5E2D9] overflow-hidden">
+      <div className="bg-[#F8F7F3] rounded-2xl border border-[#E5E2D9] overflow-hidden">
         {isGeneratingPreview ? (
           <div className="h-[500px] flex flex-col items-center justify-center gap-4">
             <Loader2 className="w-8 h-8 animate-spin text-[#9A958A]" />
@@ -203,7 +203,7 @@ export const PreviewSection: React.FC<Props> = ({
       ) : (
         <div className="flex flex-col lg:flex-row gap-8 min-h-125">
           {/* Left: Calendar */}
-          <div className="w-full lg:w-[38%] bg-[#FAFAF8] rounded-3xl border border-[#E5E2D9] p-6 max-h-[600px] overflow-auto">
+          <div className="w-full lg:w-[38%] bg-[#F8F7F3] rounded-3xl border border-[#E5E2D9] p-6 max-h-[600px] overflow-auto">
             <CalendarGrid
               selectedDate={selectedCalendarDate}
               records={records}
@@ -212,7 +212,7 @@ export const PreviewSection: React.FC<Props> = ({
           </div>
 
           {/* Center: Day Detail */}
-          <div className="w-full lg:w-[38%] bg-[#FAFAF8] rounded-3xl border border-[#E5E2D9] p-6 max-h-[600px] overflow-auto">
+          <div className="w-full lg:w-[38%] bg-[#F8F7F3] rounded-3xl border border-[#E5E2D9] p-6 max-h-[600px] overflow-auto">
             <DayDetailPanel
               selectedDate={selectedCalendarDate}
               records={records}
