@@ -72,9 +72,9 @@ export const CalendarGrid: React.FC<Props> = ({ selectedDate, records, onSelectD
     }
 
     if (record && isLeaveDay(record)) {
-      baseStyle += 'bg-[#FEF9E7] ';
+      baseStyle += 'bg-[#F0EDE6] ';
     } else if (isWeekend && inCurrentMonth) {
-      baseStyle += 'bg-[#F5F5F5]/50 ';
+      baseStyle += 'bg-[#F0EDE6] ';
     } else if (!isSelected && inCurrentMonth) {
       baseStyle += 'bg-white ';
     }
@@ -90,7 +90,7 @@ export const CalendarGrid: React.FC<Props> = ({ selectedDate, records, onSelectD
     if (record.status === 'Hari kerja') {
       return <span className={`${baseDot}bg-[#5A6355]`} />;
     }
-    return <span className={`${baseDot}bg-[#E8A838]`} />;
+    return <span className={`${baseDot}bg-[#7A6329]`} />;
   };
 
   const weekDays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -159,7 +159,7 @@ export const CalendarGrid: React.FC<Props> = ({ selectedDate, records, onSelectD
           <span className="text-[10px] text-[#8E897E]">Hari kerja</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#E8A838]" />
+          <span className="w-2 h-2 rounded-full bg-[#7A6329]" />
           <span className="text-[10px] text-[#8E897E]">Off day</span>
         </div>
       </div>

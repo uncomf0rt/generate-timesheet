@@ -4,6 +4,7 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
+  KeyRound,
   Link2,
   Loader2,
   LogIn,
@@ -32,6 +33,7 @@ interface Props {
   signatureData?: SignatureData;
   onOpenSignatureModal: () => void;
   forceEmployeeFormOpen?: number;
+  onChangePassphrase?: () => void;
 }
 
 type JiraStatus = 'checking' | 'valid' | 'invalid' | 'disconnected';
@@ -54,6 +56,7 @@ const ConfigurationPanel: React.FC<Props> = ({
   signatureData,
   onOpenSignatureModal,
   forceEmployeeFormOpen,
+  onChangePassphrase,
 }) => {
   // ============================================================================
   // STATE HOOKS - Local UI state with localStorage persistence
@@ -433,7 +436,7 @@ const ConfigurationPanel: React.FC<Props> = ({
                 ) : (
                   <button
                     onClick={onOpenSignatureModal}
-                    className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-[#A4B494] rounded-xl text-[#5A5A5A] hover:bg-[#F8F7F3] transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-[#A4B494] rounded-xl text-[#5A6355] hover:bg-[#F8F7F3] transition-colors"
                   >
                     <Pen className="w-4 h-4" />
                     <span className="text-sm">Tambah Tanda Tangan</span>
@@ -498,12 +501,16 @@ const ConfigurationPanel: React.FC<Props> = ({
                     </label>
                     <input
                       id="adoEmail"
-                      type="email"
+                      type="text"
                       value={config.adoEmail}
                       onChange={(e) => onChange('adoEmail', e.target.value)}
-                      placeholder="email@company.com"
+                      placeholder="email1@company.com, email2@company.com"
                       className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] placeholder-[#D4CFC4] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-[#3E3D39]"
                     />
+                    <p className="mt-1.5 text-[10px] text-[#9A958A]">
+                      Pisahkan dengan koma (,) untuk menggabungkan commit dari beberapa author (mis.
+                      laptop kerja &amp; laptop pribadi).
+                    </p>
                   </div>
 
                   {/* Organization - Text Input */}
@@ -538,7 +545,7 @@ const ConfigurationPanel: React.FC<Props> = ({
                         type="button"
                         onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
                         disabled={!config.adoOrg || !config.azurePat || loadingProjects}
-                        className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-left text-[#3E3D39] flex items-center justify-between disabled:bg-[#EFEDE7] disabled:cursor-not-allowed disabled:text-[#9A958A]"
+                        className="w-full rounded-2xl border-[#E5E2D9] bg-[#F8F7F3] focus:border-[#A4B494] focus:ring-[#A4B494] sm:text-sm p-3.5 border outline-none text-left text-[#3E3D39] flex items-center justify-between disabled:bg-[#EAE7DF] disabled:cursor-not-allowed disabled:text-[#9A958A]"
                       >
                         <span className={selectedProjects.length ? '' : 'text-[#D4CFC4]'}>
                           {loadingProjects ? (
@@ -619,17 +626,17 @@ const ConfigurationPanel: React.FC<Props> = ({
                     </div>
                   )}
                   {jiraStatus === 'invalid' && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between">
+                    <div className="bg-[#FAF1E0] border border-[#D4B987] rounded-2xl p-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-amber-600" />
-                        <span className="text-sm font-semibold text-amber-700">
+                        <AlertTriangle className="w-5 h-5 text-[#7C5F2E]" />
+                        <span className="text-sm font-semibold text-[#5C4A2A]">
                           Jira needs re-authentication
                         </span>
                       </div>
                       <button
                         onClick={onJiraLogin}
                         disabled={jiraLoginLoading}
-                        className="text-xs font-bold text-amber-700 hover:underline flex items-center gap-1"
+                        className="text-xs font-bold text-[#7C5F2E] hover:underline flex items-center gap-1"
                       >
                         <LogIn className="w-3 h-3" />
                         Reconnect
@@ -684,6 +691,16 @@ const ConfigurationPanel: React.FC<Props> = ({
 
       {/* Action Buttons */}
       <div className="pt-6 h-16 border-t border-[#E5E2D9] flex justify-end gap-4 items-center">
+        {onChangePassphrase && (
+          <button
+            onClick={onChangePassphrase}
+            className="h-full flex items-center gap-2 px-5 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border bg-white text-[#5A6355] border-[#E5E2D9] hover:bg-[#F8F7F3]"
+            title="Ganti passphrase enkripsi"
+          >
+            <KeyRound className="w-4 h-4" />
+            Change Passphrase
+          </button>
+        )}
         {config.adoOrg ||
         config.adoEmail ||
         config.azurePat ||
@@ -692,7 +709,7 @@ const ConfigurationPanel: React.FC<Props> = ({
         employeeInfo.nama ? (
           <button
             onClick={onClearData}
-            className="h-full flex items-center gap-2 px-6 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border bg-white text-red-500 border-[#E5E2D9] hover:bg-red-50"
+            className="h-full flex items-center gap-2 px-6 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm border bg-white text-[#9C5C4F] border-[#E5E2D9] hover:bg-[#FBF5F2]"
             title="Hapus data kredensial yang tersimpan di browser"
           >
             <Trash2 className="w-4 h-4" />

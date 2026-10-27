@@ -68,8 +68,8 @@ export const HelpPanel: React.FC = () => {
               </ol>
             </div>
 
-            <p className="text-xs text-[#B8865D] bg-[#E7AB79]/10 p-3 rounded-lg border border-[#E7AB79]/20">
-              <span className="font-semibold">⚠️ Penting:</span> Jangan bagikan PAT Anda kepada orang
+            <p className="text-xs text-[#7C5F2E] bg-[#D4B987]/10 p-3 rounded-lg border border-[#D4B987]/20">
+              <span className="font-semibold">Penting:</span> Jangan bagikan PAT Anda kepada orang
               lain. Disarankan untuk membuat PAT baru setiap kali diperlukan, atau atur expiration
               date agar otomatis hangus.
             </p>
@@ -111,7 +111,7 @@ export const HelpPanel: React.FC = () => {
               </ol>
             </div>
 
-            <div className="bg-[#FFF4E6] border border-[#E7AB79]/30 rounded-2xl p-4">
+            <div className="bg-[#FAF1E0] border border-[#D4B987]/30 rounded-2xl p-4">
               <p className="text-xs text-[#5A6355] mb-2">
                 <span className="font-semibold">Persyaratan:</span>
               </p>

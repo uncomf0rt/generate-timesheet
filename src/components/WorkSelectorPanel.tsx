@@ -207,6 +207,7 @@ export const WorkSelectorPanel: React.FC<Props> = ({
                     const alreadyAdded =
                       addedItems.has(item.id) || selectedText.includes(item.text.substring(0, 30));
                     return (
+                      // biome-ignore lint/a11y/noStaticElementInteractions: draggable divs need an onDragStart handler; the parent container manages keyboard accessibility
                       <div
                         key={item.id}
                         draggable={!alreadyAdded}

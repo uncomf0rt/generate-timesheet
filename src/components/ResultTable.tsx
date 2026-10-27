@@ -156,7 +156,7 @@ const ResultRow: React.FC<RowProps> = ({
 
   return (
     <tr
-      className={`${leave ? 'bg-[#FFF8E7]' : 'hover:bg-[#F8F7F3]/50 transition-colors'} ${
+      className={`${leave ? 'bg-[#F0EDE6]' : 'hover:bg-[#F8F7F3]/50 transition-colors'} ${
         isDragOver ? 'bg-[#E7F5E4]/30' : ''
       }`}
     >
@@ -172,7 +172,7 @@ const ResultRow: React.FC<RowProps> = ({
           disabled={leave}
           className={`block w-full rounded-xl border-0 py-1.5 pl-3 text-xs outline-none transition-shadow ${
             leave
-              ? 'bg-[#FFF8E7] text-[#8E897E] cursor-not-allowed'
+              ? 'bg-[#F0EDE6] text-[#8E897E] cursor-not-allowed'
               : 'bg-[#F8F7F3] text-[#5A6355] focus:ring focus:ring-[#A4B494]/20'
           }`}
         />
@@ -185,7 +185,7 @@ const ResultRow: React.FC<RowProps> = ({
           disabled={leave}
           className={`block w-full rounded-xl border-0 py-1.5 pl-3 text-xs outline-none transition-shadow ${
             leave
-              ? 'bg-[#FFF8E7] text-[#8E897E] cursor-not-allowed'
+              ? 'bg-[#F0EDE6] text-[#8E897E] cursor-not-allowed'
               : 'bg-[#F8F7F3] text-[#5A6355] focus:ring focus:ring-[#A4B494]/20'
           }`}
         />
@@ -196,7 +196,7 @@ const ResultRow: React.FC<RowProps> = ({
           onChange={(e) => onUpdateRecord(index, 'status', e.target.value as KeteranganType)}
           className={`block w-full rounded-xl border-0 py-1.5 pl-3 pr-8 ring-1 ring-inset outline-none focus:ring-2 focus:ring-inset text-xs font-bold sm:leading-6 ${
             leave
-              ? 'bg-[#FFF8E7] text-[#8E897E] ring-[#D9D5CB] focus:ring-[#8E897E]'
+              ? 'bg-[#F0EDE6] text-[#8E897E] ring-[#D9D5CB] focus:ring-[#8E897E]'
               : 'bg-[#F8F7F3] text-[#5A6355] ring-[#A4B494]/30 focus:ring-[#A4B494]'
           }`}
         >
@@ -254,7 +254,7 @@ const ResultRow: React.FC<RowProps> = ({
                   onUpdateRecord(index, 'editableActivity', newActivity);
                   setShowQuickAdd(false);
                 }}
-                className="w-full text-left p-2.5 rounded-xl bg-[#FAFAF8] border border-[#E5E2D9] hover:border-[#A4B494] hover:bg-[#E7F5E4]/30 transition-all"
+                className="w-full text-left p-2.5 rounded-xl bg-[#F8F7F3] border border-[#E5E2D9] hover:border-[#A4B494] hover:bg-[#E7F5E4]/30 transition-all"
               >
                 <span
                   className={`text-[8px] font-bold uppercase px-1 py-0.5 rounded ${
@@ -289,7 +289,7 @@ const ResultRow: React.FC<RowProps> = ({
             <textarea
               className={`flex-1 resize-y border rounded-xl focus:ring focus:ring-[#A4B494]/20 p-3 text-sm outline-none transition-shadow ${
                 leave
-                  ? 'bg-[#FFF8E7] border-[#E5E2D9]'
+                  ? 'bg-[#F0EDE6] border-[#E5E2D9]'
                   : 'bg-transparent border-[#E5E2D9] focus:border-[#A4B494]'
               }`}
               value={
@@ -313,7 +313,7 @@ const ResultRow: React.FC<RowProps> = ({
             {!leave && (
               <button
                 onClick={() => setShowQuickAdd(!showQuickAdd)}
-                className="shrink-0 mt-1 p-2 rounded-xl bg-[#E7F5E4] hover:bg-[#D9EDDA] transition-colors text-[#5A6355] shadow-sm"
+                className="shrink-0 mt-1 p-2 rounded-xl bg-[#E7F5E4] hover:bg-[#D5DDC8] transition-colors text-[#5A6355] shadow-sm"
                 title="Pilih pekerjaan"
               >
                 <Plus className="w-3.5 h-3.5" />

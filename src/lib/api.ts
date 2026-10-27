@@ -6,6 +6,14 @@ const createBasicAuth = (pat: string) => {
   return `Basic ${Buffer.from(`:${pat}`).toString('base64')}`;
 };
 
+// Parse a comma-separated email string into a trimmed, non-empty array.
+// "a@x.com, b@x.com,," -> ["a@x.com", "b@x.com"]
+export const parseEmails = (input: string): string[] =>
+  input
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
 // Jira OAuth endpoints
 export const initiateJiraOAuth = async () => {
   const { data } = await axios.get('/api/auth/jira/authorize-url');
@@ -45,6 +53,10 @@ export const getAdoRepos = async (config: Config) => {
 };
 
 export const getAdoCommits = async (config: Omit<Config, 'jiraToken'> & { repoId: string }) => {
+  const authors = parseEmails(config.adoEmail);
+  if (authors.length === 0) {
+    return [];
+  }
   const {
     data: { commits },
   } = (await axios.post('/api/ado/commits', {
@@ -53,7 +65,7 @@ export const getAdoCommits = async (config: Omit<Config, 'jiraToken'> & { repoId
     repoId: config.repoId,
     pat: config.azurePat,
     searchCriteria: {
-      author: config.adoEmail,
+      authors,
       fromDate: config.startDate,
       toDate: config.endDate,
     },
